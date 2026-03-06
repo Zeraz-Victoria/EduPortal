@@ -184,7 +184,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Sistema Asistencia Card */}
                     <div
-                        onClick={() => window.open('http://localhost:3002/login', '_blank')}
+                        onClick={() => window.open('https://sistema-asistencia-1j2e.onrender.com', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-orange-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-amber-500 absolute top-0 left-0" />
