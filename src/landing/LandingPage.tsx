@@ -2,7 +2,7 @@ import React from 'react';
 import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow } from 'lucide-react';
 
 interface LandingPageProps {
-    onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/asistencia') => void;
+    onNavigate: (route: '/' | '/eduplan' | '/edulegal') => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
@@ -184,7 +184,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Sistema Asistencia Card */}
                     <div
-                        onClick={() => onNavigate('/asistencia')}
+                        onClick={() => window.open('http://localhost:3002/login', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-orange-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-amber-500 absolute top-0 left-0" />
@@ -207,7 +207,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware/Software</span>
                                 <div className="text-orange-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    Abrir <ArrowRight size={14} />
+                                    Abrir <ExternalLink size={14} />
                                 </div>
                             </div>
                         </div>
