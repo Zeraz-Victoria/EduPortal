@@ -44,14 +44,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 {/* Stats row */}
                 <div className="flex flex-wrap justify-center gap-4 mb-8 text-center">
                     {[
-                        { label: 'NEM 2022', sublabel: 'Planeación oficial' },
-                        { label: '7 Leyes', sublabel: 'Marco legal' },
-                        { label: 'DeepSeek AI', sublabel: 'Inteligencia' },
-                        { label: 'Gamificado', sublabel: 'Educación viva' },
-                    ].map((s) => (
-                        <div key={s.label} className="bg-white/70 backdrop-blur border border-white/60 rounded-xl px-4 py-2 shadow-sm">
-                            <div className="font-black text-base text-slate-900">{s.label}</div>
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{s.sublabel}</div>
+                        'NEM 2022',
+                        'Marco Legal',
+                        'Inteligencia Artificial',
+                        'Gamificado',
+                    ].map((label) => (
+                        <div key={label} className="bg-white/70 backdrop-blur border border-white/60 rounded-xl px-4 py-2 shadow-sm flex items-center justify-center">
+                            <div className="font-black text-sm text-slate-800 uppercase tracking-wide">{label}</div>
                         </div>
                     ))}
                 </div>
