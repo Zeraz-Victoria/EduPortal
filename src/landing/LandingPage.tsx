@@ -27,6 +27,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
+            {/* Top Donation CTA */}
+            <div className="w-full bg-gradient-to-r from-rose-50 to-pink-50 border-b border-rose-100">
+                <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-2 rounded-lg shadow-inner shrink-0 hidden sm:block">
+                            <Heart className="w-5 h-5 text-white fill-white animate-pulse" />
+                        </div>
+                        <div className="flex-1 text-center sm:text-left">
+                            <div className="flex items-center justify-center sm:justify-start gap-2 mb-0.5">
+                                <span className="sm:hidden"><Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" /></span>
+                                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">Apoya el proyecto EduPortal</h2>
+                            </div>
+                            <p className="text-slate-600 text-[10px] sm:text-xs font-medium leading-snug max-w-2xl mx-auto sm:mx-0">
+                                Tu donativo nos ayuda a mantener estas herramientas IA rápidas y 100% gratuitas para todos los docentes de México.
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        href="https://gofund.me/8bb0e4fcc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full md:w-auto flex justify-center items-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 shadow-md transition-all text-xs sm:text-sm shrink-0"
+                    >
+                        Dona Aquí <Heart size={14} className="fill-current text-white/50" />
+                    </a>
+                </div>
+            </div>
+
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
@@ -205,30 +233,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {/* Donation CTA */}
-                <div className="mt-8 max-w-4xl mx-auto bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md border border-rose-100 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-left">
-                    <div className="flex items-start gap-4">
-                        <div className="bg-gradient-to-br from-rose-400 to-pink-500 p-3 rounded-xl shadow-inner shrink-0 mt-1">
-                            <Heart className="w-6 h-6 text-white fill-white animate-pulse" />
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-xl font-black text-slate-900 mb-1">Apoya a EduPortal</h2>
-                            <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed max-w-xl">
-                                Con tu donativo voluntario, mantendremos estos servidores funcionando de forma rápida y gratuita para cientos de maestros en México.
-                            </p>
-                        </div>
-                    </div>
-                    <a
-                        href="https://gofund.me/8bb0e4fcc"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full md:w-auto flex justify-center items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-xl hover:bg-rose-500 hover:scale-[1.02] active:scale-95 shadow-sm transition-all text-sm shrink-0"
-                    >
-                        Dona Aquí
-                        <ExternalLink size={16} />
-                    </a>
                 </div>
 
                 {/* Bottom note */}
