@@ -29,22 +29,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center relative">
-                <div className="flex justify-end mb-6">
-                    <div className="inline-flex flex-col items-end gap-1.5">
-                        <span className="text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">Ayudanos a mantener EduPortal gratuito</span>
-                        <a
-                            href="https://gofund.me/8bb0e4fcc"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                            <Heart size={14} className="fill-white animate-pulse" />
-                            <span className="text-xs font-black uppercase tracking-widest text-white">Apoya / Dona Aquí</span>
-                        </a>
-                    </div>
-                </div>
-
-                <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
+                <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-6">
                     Todo lo que necesita
                     <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-violet-600">
@@ -52,9 +37,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     </span>
                 </h1>
 
-                <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium mb-8">
-                    Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
-                </p>
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-8 text-left">
+                    <p className="flex-1 text-base text-slate-500 leading-relaxed font-medium">
+                        Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
+                    </p>
+                    <div className="shrink-0 inline-flex flex-col items-center md:items-end gap-1.5">
+                        <span className="text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">Mantén EduPortal gratis</span>
+                        <a
+                            href="https://gofund.me/8bb0e4fcc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Heart size={14} className="fill-white animate-pulse" />
+                            <span className="text-xs font-black uppercase tracking-widest text-white">Dona Aquí</span>
+                        </a>
+                    </div>
+                </div>
 
                 {/* Stats row */}
                 <div className="flex flex-wrap justify-center gap-4 mb-8 text-center">
