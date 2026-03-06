@@ -232,16 +232,7 @@ const App: React.FC<AppProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-800 relative">
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="absolute top-4 left-4 z-50 p-2 bg-white/80 backdrop-blur-md rounded-full text-slate-600 hover:text-slate-900 shadow-sm border border-slate-200 hover:scale-105 transition-all"
-          title="Volver al Portal"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      )}
-      <Header score={score} resetApp={resetApp} />
+      <Header score={score} resetApp={resetApp} onBack={onBack} />
 
       {isLoading && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col items-center justify-center backdrop-blur-sm text-white">

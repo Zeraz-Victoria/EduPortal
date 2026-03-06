@@ -24,6 +24,9 @@ export default {
                     900: '#313184',
                     950: '#1e1c4e',
                 },
+                'brand-guinda': '#7e1e36',
+                'brand-gold': '#bc955c',
+                'brand-dark': '#1a202c',
             },
             boxShadow: {
                 'premium': '0 25px 50px -12px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8) inset',
