@@ -28,7 +28,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             </header>
 
             {/* Hero */}
-            <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center relative">
+            <section className="max-w-6xl mx-auto px-6 pt-10 pb-0 text-center relative">
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-6">
                     Todo lo que necesita
                     <br />
