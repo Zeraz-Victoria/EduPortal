@@ -29,15 +29,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center relative">
-                <a
-                    href="https://gofund.me/8bb0e4fcc"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full mb-6 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                >
-                    <Heart size={14} className="fill-white animate-pulse" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Apoya / Dona Aquí</span>
-                </a>
+                <div className="flex justify-end mb-6">
+                    <div className="inline-flex flex-col items-end gap-1.5">
+                        <span className="text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">Ayudanos a mantener EduPortal gratuito</span>
+                        <a
+                            href="https://gofund.me/8bb0e4fcc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Heart size={14} className="fill-white animate-pulse" />
+                            <span className="text-xs font-black uppercase tracking-widest text-white">Apoya / Dona Aquí</span>
+                        </a>
+                    </div>
+                </div>
 
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
                     Todo lo que necesita
