@@ -29,16 +29,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
+                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-brand-100 px-3 py-1.5 rounded-full mb-6 shadow-sm">
+                    <Brain size={12} className="text-brand-500" />
+                    <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Portal Unificado de Herramientas IA</span>
+                </div>
+
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
-                    Tus Herramientas de IA
+                    Todo lo que necesita
                     <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-violet-600">
-                        diseñadas para la Nueva Escuela Mexicana.
+                        el docente moderno.
                     </span>
                 </h1>
 
                 <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium mb-8">
-                    Planea, actúa con respaldo legal y enseña de forma gamificada.
+                    Tus Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
                 </p>
 
                 {/* Stats row */}
