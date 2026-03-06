@@ -37,11 +37,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     </span>
                 </h1>
 
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-8 text-left">
-                    <p className="flex-1 text-base text-slate-500 leading-relaxed font-medium">
+                <div className="max-w-4xl mx-auto flex flex-col items-center justify-center gap-6 mb-8 text-center">
+                    <p className="text-base text-slate-500 leading-relaxed font-medium max-w-2xl px-4">
                         Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
                     </p>
-                    <div className="shrink-0 inline-flex flex-col items-center md:items-end gap-1.5">
+                    <div className="shrink-0 inline-flex flex-col items-center gap-1.5">
                         <a
                             href="https://gofund.me/8bb0e4fcc"
                             target="_blank"
