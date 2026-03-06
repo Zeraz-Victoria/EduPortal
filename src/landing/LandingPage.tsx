@@ -29,21 +29,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
-                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-brand-100 px-3 py-1.5 rounded-full mb-6 shadow-sm">
-                    <Brain size={12} className="text-brand-500" />
-                    <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Portal Unificado de Herramientas IA</span>
-                </div>
-
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
-                    Todo lo que necesita
+                    Tus Herramientas de IA
                     <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-violet-600">
-                        el docente moderno.
+                        diseñadas para la Nueva Escuela Mexicana.
                     </span>
                 </h1>
 
                 <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium mb-8">
-                    Tres herramientas de inteligencia artificial diseñadas para la Nueva Escuela Mexicana.
                     Planea, actúa con respaldo legal y enseña de forma gamificada.
                 </p>
 
@@ -138,10 +132,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     </div>
 
                 </div>
-            </section>
+            </section >
 
             {/* Plataformas de Gestión y Aprendizaje */}
-            <section className="max-w-6xl mx-auto px-6 pb-12">
+            < section className="max-w-6xl mx-auto px-6 pb-12" >
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shadow-sm border border-sky-200/50">
                         <AppWindow size={20} />
@@ -242,8 +236,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <p className="text-center text-xs text-slate-400 font-medium mt-10">
                     Portal local · AprendIA en <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">localhost:3001</code>
                 </p>
-            </section>
-        </div>
+            </section >
+        </div >
     );
 };
 
