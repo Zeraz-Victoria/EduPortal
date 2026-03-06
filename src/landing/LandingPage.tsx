@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </h1>
 
                 <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium mb-8">
-                    Tus Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
+                    Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
                 </p>
 
                 {/* Stats row */}
