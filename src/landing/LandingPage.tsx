@@ -27,36 +27,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            {/* Top Donation CTA */}
-            <div className="w-full bg-gradient-to-r from-rose-50 to-pink-50 border-b border-rose-100">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-2 rounded-lg shadow-inner shrink-0 hidden sm:block">
-                            <Heart className="w-5 h-5 text-white fill-white animate-pulse" />
-                        </div>
-                        <div className="flex-1 text-center sm:text-left">
-                            <div className="flex items-center justify-center sm:justify-start gap-2 mb-0.5">
-                                <span className="sm:hidden"><Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" /></span>
-                                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">Apoya el proyecto EduPortal</h2>
-                            </div>
-                            <p className="text-slate-600 text-[10px] sm:text-xs font-medium leading-snug max-w-2xl mx-auto sm:mx-0">
-                                Tu donativo nos ayuda a mantener estas herramientas IA rápidas y 100% gratuitas para todos los docentes de México.
-                            </p>
-                        </div>
-                    </div>
-                    <a
-                        href="https://gofund.me/8bb0e4fcc"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full md:w-auto flex justify-center items-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 shadow-md transition-all text-xs sm:text-sm shrink-0"
-                    >
-                        Dona Aquí <Heart size={14} className="fill-current text-white/50" />
-                    </a>
-                </div>
-            </div>
-
             {/* Hero */}
-            <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
+            <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center relative">
+                <a
+                    href="https://gofund.me/8bb0e4fcc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full mb-6 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                    <Heart size={14} className="fill-white animate-pulse" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Apoya / Dona Aquí</span>
+                </a>
+
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
                     Todo lo que necesita
                     <br />
