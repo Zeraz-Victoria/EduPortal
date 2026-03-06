@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow } from 'lucide-react';
+import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay } from 'lucide-react';
 
 interface LandingPageProps {
     onNavigate: (route: '/' | '/eduplan' | '/edulegal') => void;
@@ -199,11 +199,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                         <div className="p-5 flex flex-col h-full">
                             <div className="flex items-start gap-4 mb-3">
                                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
-                                    <Sparkles size={22} />
+                                    <ShieldCheck size={22} />
                                 </div>
                                 <div className="pt-1">
                                     <div className="inline-flex items-center gap-1 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md mb-1">
-                                        <ShieldCheck size={9} className="text-orange-600" />
+                                        <Sparkles size={9} className="text-orange-600" />
                                         <span className="text-[8px] font-black text-orange-700 uppercase tracking-widest">Control Escolar</span>
                                     </div>
                                     <h2 className="text-lg font-black text-slate-900 leading-tight">Asistencia IA</h2>
@@ -216,6 +216,68 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware/Software</span>
                                 <div className="text-orange-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                                     Abrir <ExternalLink size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Simulador Docente Card */}
+                    <div
+                        onClick={() => window.open('https://github.com/Zeraz-Victoria/Simulador_Docente', '_blank')}
+                        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-indigo-300 transition-all duration-300 flex flex-col"
+                    >
+                        <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-600 absolute top-0 left-0" />
+                        <div className="p-5 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                    <MonitorPlay size={22} />
+                                </div>
+                                <div className="pt-1">
+                                    <div className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md mb-1">
+                                        <Sparkles size={9} className="text-indigo-600" />
+                                        <span className="text-[8px] font-black text-indigo-700 uppercase tracking-widest">Evaluación USICAMM</span>
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Simulador Docente</h2>
+                                </div>
+                            </div>
+                            <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
+                                Practica y prepárate para las evaluaciones oficiales con simulaciones y retroalimentación inteligente.
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Brain size={12} /> Cuestionarios IA</span>
+                                <div className="text-indigo-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    GitHub <ExternalLink size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Biblioteca Cloud Card */}
+                    <div
+                        onClick={() => window.open('https://github.com/Zeraz-Victoria/biblioteca-cloud', '_blank')}
+                        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-teal-300 transition-all duration-300 flex flex-col"
+                    >
+                        <div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-500 absolute top-0 left-0" />
+                        <div className="p-5 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                    <Cloud size={22} />
+                                </div>
+                                <div className="pt-1">
+                                    <div className="inline-flex items-center gap-1 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-md mb-1">
+                                        <BookOpen size={9} className="text-teal-600" />
+                                        <span className="text-[8px] font-black text-teal-700 uppercase tracking-widest">Recursos Digitales</span>
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Biblioteca Cloud</h2>
+                                </div>
+                            </div>
+                            <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
+                                Almacenamiento centralizado y gestión en la nube de recursos bibliográficos gratuitos para consulta y descarga.
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Cloud size={12} /> Repositorio Web</span>
+                                <div className="text-teal-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    GitHub <ExternalLink size={14} />
                                 </div>
                             </div>
                         </div>
