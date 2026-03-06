@@ -153,7 +153,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <div className="grid md:grid-cols-2 gap-5">
                     {/* AprendIA Card */}
                     <div
-                        onClick={() => window.open('http://localhost:3001', '_blank')}
+                        onClick={() => window.open('https://aprendia.onrender.com', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-sky-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-sky-500 to-blue-600 absolute top-0 left-0" />
