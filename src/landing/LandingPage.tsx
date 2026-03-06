@@ -208,14 +208,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Donation CTA */}
-                <div className="mt-8 max-w-4xl mx-auto bg-white rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between text-left shadow-sm hover:shadow-md border border-rose-100 transition-all">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-gradient-to-br from-rose-400 to-pink-500 p-3 rounded-xl shadow-inner shrink-0">
+                <div className="mt-8 max-w-4xl mx-auto bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md border border-rose-100 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-left">
+                    <div className="flex items-start gap-4">
+                        <div className="bg-gradient-to-br from-rose-400 to-pink-500 p-3 rounded-xl shadow-inner shrink-0 mt-1">
                             <Heart className="w-6 h-6 text-white fill-white animate-pulse" />
                         </div>
-                        <div>
-                            <h2 className="text-xl font-black text-slate-900 mb-0.5">Apoya a EduPortal</h2>
-                            <p className="text-slate-500 text-xs font-medium">
+                        <div className="flex-1">
+                            <h2 className="text-xl font-black text-slate-900 mb-1">Apoya a EduPortal</h2>
+                            <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed max-w-xl">
                                 Con tu donativo voluntario, mantendremos estos servidores funcionando de forma rápida y gratuita para cientos de maestros en México.
                             </p>
                         </div>
@@ -224,10 +224,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                         href="https://gofund.me/8bb0e4fcc"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-4 sm:mt-0 whitespace-nowrap inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-lg hover:bg-rose-500 hover:scale-105 active:scale-95 shadow-sm transition-all text-sm"
+                        className="w-full md:w-auto flex justify-center items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-xl hover:bg-rose-500 hover:scale-[1.02] active:scale-95 shadow-sm transition-all text-sm shrink-0"
                     >
-                        Donar Aquí
-                        <ExternalLink size={14} />
+                        Dona Aquí
+                        <ExternalLink size={16} />
                     </a>
                 </div>
 
