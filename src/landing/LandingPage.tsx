@@ -29,11 +29,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Hero */}
             <section className="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
-                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-brand-100 px-3 py-1.5 rounded-full mb-6 shadow-sm">
-                    <Brain size={12} className="text-brand-500" />
-                    <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Portal Unificado de Herramientas IA</span>
-                </div>
-
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-[1.05] tracking-tight mb-4">
                     Todo lo que necesita
                     <br />
