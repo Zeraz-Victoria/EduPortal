@@ -42,7 +42,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                         Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
                     </p>
                     <div className="shrink-0 inline-flex flex-col items-center md:items-end gap-1.5">
-                        <span className="text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">Mantén EduPortal gratis</span>
                         <a
                             href="https://gofund.me/8bb0e4fcc"
                             target="_blank"
