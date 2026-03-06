@@ -223,7 +223,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Simulador Docente Card */}
                     <div
-                        onClick={() => window.open('https://github.com/Zeraz-Victoria/Simulador_Docente', '_blank')}
+                        onClick={() => window.open('https://simulador-docente.onrender.com', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-indigo-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-600 absolute top-0 left-0" />
@@ -246,7 +246,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Brain size={12} /> Cuestionarios IA</span>
                                 <div className="text-indigo-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    GitHub <ExternalLink size={14} />
+                                    Abrir <ExternalLink size={14} />
                                 </div>
                             </div>
                         </div>
@@ -254,7 +254,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Biblioteca Cloud Card */}
                     <div
-                        onClick={() => window.open('https://github.com/Zeraz-Victoria/biblioteca-cloud', '_blank')}
+                        onClick={() => window.open('https://biblioteca-cloud.onrender.com', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-teal-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-500 absolute top-0 left-0" />
@@ -277,7 +277,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Cloud size={12} /> Repositorio Web</span>
                                 <div className="text-teal-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    GitHub <ExternalLink size={14} />
+                                    Abrir <ExternalLink size={14} />
                                 </div>
                             </div>
                         </div>
