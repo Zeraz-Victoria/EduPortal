@@ -2,7 +2,7 @@ import React from 'react';
 import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay } from 'lucide-react';
 
 interface LandingPageProps {
-    onNavigate: (route: '/' | '/eduplan' | '/edulegal') => void;
+    onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/simulador') => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
@@ -223,7 +223,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Simulador Docente Card */}
                     <div
-                        onClick={() => window.open('https://simulador-docente.onrender.com', '_blank')}
+                        onClick={() => onNavigate('/simulador')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-indigo-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-600 absolute top-0 left-0" />

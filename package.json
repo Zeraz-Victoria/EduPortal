@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^1.44.0",
     "docx": "^9.1.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
