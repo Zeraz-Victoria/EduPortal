@@ -41,17 +41,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     <p className="text-base text-slate-500 leading-relaxed font-medium max-w-2xl px-4">
                         Herramientas de IA diseñadas para la Nueva Escuela Mexicana. Planea, actúa con respaldo legal y enseña de forma gamificada.
                     </p>
-                    <div className="shrink-0 inline-flex flex-col items-center gap-1.5">
-                        <a
-                            href="https://gofund.me/8bb0e4fcc"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                            <Heart size={14} className="fill-white animate-pulse" />
-                            <span className="text-xs font-black uppercase tracking-widest text-white">Dona Aquí</span>
-                        </a>
-                    </div>
                 </div>
 
                 {/* Stats row */}
@@ -66,6 +55,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <div className="font-black text-sm text-slate-800 uppercase tracking-wide">{label}</div>
                         </div>
                     ))}
+                </div>
+
+                {/* Donation Button (Below badgets test) */}
+                <div className="flex justify-center mb-10">
+                    <a
+                        href="https://gofund.me/8bb0e4fcc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2.5 rounded-full shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-95 transition-all cursor-pointer"
+                    >
+                        <Heart size={16} className="fill-white animate-pulse" />
+                        <span className="text-sm font-black uppercase tracking-widest text-white">Dona Aquí</span>
+                    </a>
                 </div>
             </section>
 
