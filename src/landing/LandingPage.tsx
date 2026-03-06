@@ -58,7 +58,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Donation Button (Below badgets test) */}
-                <div className="flex justify-center mb-10">
+                <div className="flex justify-center mb-2">
                     <a
                         href="https://gofund.me/8bb0e4fcc"
                         target="_blank"
