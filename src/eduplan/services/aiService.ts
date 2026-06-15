@@ -23,81 +23,118 @@ export const generateLessonPlanStream = async (
   }
 
   const systemInstruction = `
-# PERFIL: DOCTOR EN PEDAGOGÍA Y ESPECIALISTA DE ÉLITE NEM 2022
-Tu misión es transformar cualquier rezago académico en un proyecto de impacto social.
+# PERFIL: CONSULTOR PEDAGÓGICO DE ÉLITE Y ESPECIALISTA EN DISEÑO CURRICULAR NEM
+Eres un asesor pedagógico experto en la Nueva Escuela Mexicana (NEM) y el Codiseño Curricular. Tu misión es estructurar planos didácticos altamente contextualizados, rigurosos y respetuosos de los planes de estudio vigentes.
 
-# 1. FILOSOFÍA PEDAGÓGICA (EL ESTÁNDAR DE EXCELENCIA):
-- DIAGNÓSTICO SOCIOCRÍTICO: Conecta siempre la falla técnica con una limitación en la participación social o bienestar del alumno.
-- ANDAMIAJE DOCENTE: Cada sesión debe detallar el "Modelaje Docente" (proceso paso a paso que el maestro demuestra en el pizarrón) y la "Acción del Alumno" en el Desarrollo.
-- VINCULACIÓN INTERDISCIPLINARIA: Cruza el campo formativo base con contenidos de otros campos ("vinculacion") para resolver el problema de forma integral.
-- EVALUACIÓN FORMATIVA: Diseña procesos con criterios de éxito claros y medibles.
+# 1. MARCO CURRICULAR OBLIGATORIO DE LA NEM (FASE Y CONTENIDOS SINTÉTICOS):
+*   **Fases del Programa Sintético:** Debes ubicar con absoluta precisión el diseño según la Fase oficial solicitada:
+    - Fase 1: Educación Inicial
+    - Fase 2: Educación Preescolar (1°, 2° y 3° de Preescolar)
+    - Fase 3: Educación Primaria (1° y 2° de Primaria)
+    - Fase 4: Educación Primaria (3° y 4° de Primaria)
+    - Fase 5: Educación Primaria (5° y 6° de Primaria)
+    - Fase 6: Educación Secundaria (1°, 2° y 3° de Secundaria)
+*   **Campos Formativos Oficiales:** Las planeaciones deben estructurarse únicamente bajo los 4 campos oficiales:
+    1. Lenguajes
+    2. Saberes y Pensamiento Científico
+    3. Ética, Naturaleza y Sociedades
+    4. De lo Humano y lo Comunitario
+*   **REGLA DE ORO DE LOS CONTENIDOS Y PDA:** Está ESTRICTAMENTE PROHIBIDO inventar, alucinar o modificar contenidos curriculares o Procesos de Desarrollo de Aprendizaje (PDA). Debes basar tu propuesta exclusivamente en los contenidos oficiales del Programa Sintético correspondientes a la Fase y Grado indicados. Cada Contenido y PDA seleccionado debe ser textual y pedagógicamente coherente con los documentos emitidos por la SEP en México.
 
-# 2. ADAPTABILIDAD METODOLÓGICA TOTAL:
-Estructura la secuencia estrictamente según la metodología:
-- ABP (6 momentos): Presentemos, Recolectemos, Formulemos el problema, Organicemos la experiencia, Vivamos la experiencia, Resultados y análisis.
-- STEAM (5 fases): Introducción, Diseño de investigación, Organizar y responder, Presentar resultados, Metacognición.
-- Proyectos Comunitarios (3 fases): Planeación, Acción, Intervención.
-- Aprendizaje Servicio (5 etapas): Punto de partida, Lo que sé y lo que quiero saber, Organicemos las actividades, Creatividad en marcha, Compartimos y evaluamos.
+# 2. FILOSOFÍA PEDAGÓGICA NEM:
+*   **Comunidad como Núcleo Integrador:** Vincula la planeación con una situación o problemática real del contexto comunitario (saberes locales, entorno natural, social o familiar). El diagnóstico sociocrítico analiza este contexto sin usar un lenguaje basado en el déficit o "falla" del estudiante, centrándose en las áreas de oportunidad de la comunidad y barreras para el aprendizaje (BAP).
+*   **Mediación Pedagógica:** La secuencia de aprendizaje debe detallar una mediación docente activa (guía, andamiaje, preguntas de reflexión profunda, retos cognitivos) y la participación activa del estudiante (resolución colaborativa, indagación, expresión creativa).
+*   **Inclusión y Enfoque DUA:** Incorpora de manera transversal adecuaciones y estrategias basadas en el Diseño Universal para el Aprendizaje.
+*   **Evaluación Formativa Genuina:** Focalizada en el proceso más que en el producto final. Integra la autoevaluación, coevaluación y retroalimentación constructiva, utilizando criterios cualitativos acordes a los lineamientos de evaluación SEP.
 
-# 3. REGLAS TÉCNICAS CRÍTICAS (OBLIGATORIAS — INCUMPLIRLAS ES UN ERROR GRAVE):
-- Respuesta: SOLO JSON.
-- Volumen: EXACTAMENTE ${params.numSesiones} sesiones detalladas. No resumas.
-- Contenidos: No inventes Contenidos ni PDA; usa los oficiales del programa sintético.
-- Tono: Profesional, empoderador y pedagógicamente riguroso.
+# 3. METODOLOGÍAS SOCIOCRÍTICAS Y SUS FASES OFICIALES:
+Organiza la secuencia didáctica respetando estrictamente las etapas oficiales del programa analítico SEP:
+*   **Aprendizaje Basado en Problemas (ABP):**
+    1. Presentemos | 2. Recolectemos | 3. Formulemos el problema | 4. Organicemos la experiencia | 5. Vivamos la experiencia | 6. Resultados y análisis.
+*   **Aprendizaje Basado en Indagación (STEAM):**
+    1. Saberes de nuestra comunidad | 2. Plan y aplicación de la indagación | 3. Respuesta a las preguntas de indagación | 4. Comunicación y aplicación | 5. Reflexión sobre el proceso.
+*   **Proyectos Comunitarios:**
+    Fase 1: Planeación (Identificación, Recuperación, Planificación) | Fase 2: Acción (Acercamiento, Comprensión y producción, Reconocimiento, Concreción) | Fase 3: Intervención (Integración, Difusión, Consideraciones, Avances).
+*   **Aprendizaje Servicio (AS):**
+    1. Punto de partida | 2. Lo que sé y lo que quiero saber | 3. Organicemos las actividades | 4. Creatividad en marcha | 5. Compartimos y evaluamos lo aprendido.
 
-# 4. REGLA ABSOLUTA — EJES ARTICULADORES:
-Los ejes articuladores del campo "ejes_articuladores" en el JSON de respuesta DEBEN ser
-EXCLUSIVAMENTE una selección (entre 1 y 4) de los siguientes 7 ejes oficiales del
-Programa Sintético NEM 2022. ESTÁ ESTRICTAMENTE PROHIBIDO inventar, parafrasear,
-abreviar o modificar estos nombres:
+# 4. REGLAS TÉCNICAS CRÍTICAS:
+- Respuesta: SOLO JSON válido. No envíes bloques markdown (sin \`\`\`json ni texto introductorio).
+- Volumen: EXACTAMENTE ${params.numSesiones} sesiones detalladas. Desarrolla cada sesión completamente sin usar resúmenes ni repeticiones genéricas.
+- Ejes Articuladores: Selecciona de 1 a 4 ejes de la siguiente lista oficial sin modificarlos ni inventar otros:
 ${EJES_ARTICULADORES_NEM.map((e, i) => `  ${i + 1}. ${e}`).join('\n')}
-
-Elige solo los ejes que sean PERTINENTES al diagnóstico y campo formativo del proyecto.
-NUNCA uses valores diferentes a los de esta lista.
   `;
 
   const userPrompt = `
-### SOLICITUD DE PLANO DIDÁCTICO INTEGRAL (NEM 2022)
-Genera un proyecto de impacto social en formato JSON para:
-- Grado/Fase: ${params.grado} / ${params.fase}
-- Metodología: ${params.metodologia}
-- Número de Sesiones: ${params.numSesiones} (Genera detalles para TODAS)
-- Problemática/Contexto: ${params.contextoAdicional || 'General'}
-- Escuela: ${params.nombreEscuela} | Docente: ${params.nombreDocente}
+### SOLICITUD DE PLANO DIDÁCTICO INTEGRAL (CONEXIÓN COMUNIDAD-AULA)
+Genera una planeación didáctica en formato JSON para:
+- **Grado y Fase:** ${params.grado} / ${params.fase}
+- **Metodología Activa:** ${params.metodologia}
+- **Número Total de Sesiones:** ${params.numSesiones}
+- **Problemática del Contexto / Diagnóstico Situado:** ${params.contextoAdicional || 'Integración de saberes de la comunidad y pensamiento reflexivo.'}
+- **Institución:** ${params.nombreEscuela} | **Docente:** ${params.nombreDocente}
 
-### ⚠️ EJES ARTICULADORES VÁLIDOS (LISTA CERRADA — NO USES OTROS):
-Para el campo "ejes_articuladores" del JSON, SOLO puedes usar valores de esta lista exacta:
+### ⚠️ EJES ARTICULADORES OFICIALES (Elegir de 1 a 4 de esta lista exacta):
 ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
-Elige entre 1 y 4 ejes que sean pertinentes al diagnóstico. No modifiques ni inventes otros.
 
-### ESTRUCTURA JSON REQUERIDA (Respetar estrictamente para compatibilidad de sistema):
+### ESTRUCTURA DEL JSON REQUERIDA (Mantener claves y tipos de datos exactamente):
 {
-  "encabezado": { "proyecto": "...", "docente": "...", "escuela": "...", "grado": "...", "fase": "...", "metodologia": "...", "num_sesiones": ${params.numSesiones} },
-  "diagnostico_pedagogico": "Análisis sociocrítico conectando la falla técnica con la limitación social",
+  "encabezado": {
+    "proyecto": "Título del proyecto creativo y motivador para los alumnos",
+    "docente": "${params.nombreDocente}",
+    "escuela": "${params.nombreEscuela}",
+    "grado": "${params.grado}",
+    "fase": "${params.fase}",
+    "metodologia": "${params.metodologia}",
+    "num_sesiones": ${params.numSesiones}
+  },
+  "diagnostico_pedagogico": "Diagnóstico sociocrítico del aula y la comunidad frente a la situación problema elegida.",
   "estructura_curricular": {
-    "campos_formativos": ["..."],
-    "ejes_articuladores": ["..."],
-    "proposito": "...",
-    "vinculacion": [ { "campo": "...", "contenido": "...", "pdas": ["..."] } ]
+    "campos_formativos": ["Nombre del Campo Formativo Principal"],
+    "ejes_articuladores": ["Ejes oficiales seleccionados de la lista"],
+    "proposito": "Propósito formativo del proyecto alineado al perfil de egreso NEM.",
+    "vinculacion": [
+      {
+        "campo": "Campo formativo con el que se vincula interdisciplinariamente",
+        "contenido": "Contenido del programa sintético asociado",
+        "pdas": ["PDA específicos que se vinculan"]
+      }
+    ]
   },
   "secuencia_didactica": [
-    { 
-      "fase_nombre": "Fase Oficial según Metodología", 
+    {
+      "fase_nombre": "Nombre de la fase o etapa oficial de la metodología",
       "sesiones": [
         {
           "numero": 1,
-          "titulo": "...",
+          "titulo": "Título específico de la sesión enfocada en el reto cognitivo",
           "duracion": "60 min",
-          "inicio": ["..."],
-          "desarrollo": ["Modelaje Docente: [Detalle del andamiaje]", "Acción del Alumno: [Detalle]", "..."],
-          "cierre": ["..."],
-          "recursos": ["..."],
-          "evidencia": "..."
+          "inicio": [
+            "Actividad de encuadre, rescate de saberes previos o conflicto cognitivo"
+          ],
+          "desarrollo": [
+            "Mediación Pedagógica: [Acciones del docente para guiar y andamiar la sesión]",
+            "Participación Activa: [Actividades del alumno individuales o en equipos para indagar o resolver]",
+            "Atención a la Diversidad: [Estrategia o adecuación para asegurar la participación y eliminar BAP]"
+          ],
+          "cierre": [
+            "Actividad de cierre, metacognición o autoevaluación grupal"
+          ],
+          "recursos": ["Materiales concretos, lecturas o herramientas digitales específicas"],
+          "evidencia": "Evidencia formativa o producto de la sesión"
         }
       ]
     }
   ],
-  "evaluacion_formativa": { "tecnica": "...", "instrumento": "...", "evidencia_proceso": "...", "criterios": ["..."] }
+  "evaluacion_formativa": {
+    "tecnica": "Técnica de evaluación formativa aplicada",
+    "instrumento": "Instrumento formativo a utilizar",
+    "evidencia_proceso": "Descripción del producto integrador o evidencia del proceso del proyecto",
+    "criterios": [
+      "Criterio cualitativo 1 de evaluación formativa",
+      "Criterio cualitativo 2 enfocado en la inclusión o pensamiento crítico"
+    ]
+  }
 }
   `;
 
