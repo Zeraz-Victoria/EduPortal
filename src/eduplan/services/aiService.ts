@@ -3,11 +3,14 @@ import OpenAI from "openai";
 import { LessonPlan, PlanningRequest } from "../types";
 import { EJES_ARTICULADORES_NEM } from "../constants";
 
-const deepseek = new OpenAI({
-  baseURL: "https://api.deepseek.com",
-  apiKey: (import.meta as any).env.VITE_DEEPSEEK_API_KEY,
-  dangerouslyAllowBrowser: true // Required for client-side usage in Vite
-});
+const getDeepseekClient = () => {
+  const apiKey = (import.meta as any).env.VITE_DEEPSEEK_API_KEY || "missing-key";
+  return new OpenAI({
+    baseURL: "https://api.deepseek.com",
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
+};
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -139,6 +142,7 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
   `;
 
   try {
+    const deepseek = getDeepseekClient();
     const response = await deepseek.chat.completions.create({
       model: "deepseek-chat",
       messages: [

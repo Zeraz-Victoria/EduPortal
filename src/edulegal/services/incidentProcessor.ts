@@ -3,11 +3,13 @@ import { IncidentData, AnalysisResult, RiskLevel } from '../types';
 import { LEGAL_FRAMEWORK, SEV_PROTOCOLS } from '../constants';
 
 // Inicializamos el cliente de DeepSeek (usando el SDK de OpenAI)
-const client = new OpenAI({
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com",
-  dangerouslyAllowBrowser: true // Necesario para llamar desde el navegador en desarrollo
-});
+const getClient = () => {
+  return new OpenAI({
+    apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || "missing-key",
+    baseURL: "https://api.deepseek.com",
+    dangerouslyAllowBrowser: true
+  });
+};
 
 export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResult> => {
   // Configuración dinámica por estado
@@ -95,6 +97,7 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
   `;
 
   try {
+    const client = getClient();
     const response = await client.chat.completions.create({
       model: "deepseek-chat",
       messages: [
