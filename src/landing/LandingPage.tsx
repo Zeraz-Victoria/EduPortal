@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay } from 'lucide-react';
+import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay, QrCode, FileCheck, Volume2 } from 'lucide-react';
 
 interface LandingPageProps {
     onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/simulador') => void;
@@ -149,7 +149,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             </section >
 
             {/* Plataformas de Gestión y Aprendizaje */}
-            < section className="max-w-6xl mx-auto px-6 pb-12" >
+            <section className="max-w-6xl mx-auto px-6 pb-12">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shadow-sm border border-sky-200/50">
                         <AppWindow size={20} />
@@ -158,7 +158,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                         <h2 className="text-2xl font-black text-slate-800 leading-tight">Plataformas de Gestión y Aprendizaje</h2>
                     </div>
                 </div>
-                <div className="grid md:grid-cols-2 gap-5">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {/* AprendIA Card */}
                     <div
                         onClick={() => window.open('https://aprendia.iaparamaestros.org', '_blank')}
@@ -172,8 +172,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 </div>
                                 <div className="pt-1">
                                     <div className="inline-flex items-center gap-1 bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-md mb-1">
-                                        <Sparkles size={9} className="text-sky-500" />
-                                        <span className="text-[8px] font-black text-sky-600 uppercase tracking-widest">Plataforma Gamificada</span>
+                                        <Sparkles size={9} className="text-sky-600" />
+                                        <span className="text-[8px] font-black text-sky-700 uppercase tracking-widest">Plataforma Gamificada</span>
                                     </div>
                                     <h2 className="text-lg font-black text-slate-900 leading-tight">AprendIA</h2>
                                 </div>
@@ -182,7 +182,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 Aula virtual gamificada con IA para la NEM. Alumnos con misiones de aprendizaje y mapas conceptuales.
                             </p>
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Brain size={12} /> Next.js · Gemini</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Zap size={12} /> Next.js · Gemini</span>
                                 <div className="text-sky-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                                     Abrir <ExternalLink size={14} />
                                 </div>
@@ -190,31 +190,93 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                         </div>
                     </div>
 
-                    {/* Sistema Asistencia Card */}
+                    {/* QR Asistencia Card */}
                     <div
-                        onClick={() => window.open('https://asistencia.iaparamaestros.org', '_blank')}
+                        onClick={() => window.open('https://qrasistencia.iaparamaestros.org/login.html', '_blank')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-orange-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-amber-500 absolute top-0 left-0" />
                         <div className="p-5 flex flex-col h-full">
                             <div className="flex items-start gap-4 mb-3">
                                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
-                                    <ShieldCheck size={22} />
+                                    <QrCode size={22} />
                                 </div>
                                 <div className="pt-1">
                                     <div className="inline-flex items-center gap-1 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md mb-1">
                                         <Sparkles size={9} className="text-orange-600" />
                                         <span className="text-[8px] font-black text-orange-700 uppercase tracking-widest">Control Escolar</span>
                                     </div>
-                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Asistencia IA</h2>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">QR Asistencia</h2>
                                 </div>
                             </div>
                             <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
-                                Sistema de control de asistencia. Credenciales NFC, notificaciones SMS y reportes automáticos PDF.
+                                Control de asistencia institucional con credenciales QR y NFC, notificaciones automáticas y reportes.
                             </p>
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware/Software</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware / Web</span>
                                 <div className="text-orange-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    Abrir <ExternalLink size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tareas IA Card */}
+                    <div
+                        onClick={() => window.open('https://tareas.iaparamaestros.org', '_blank')}
+                        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-violet-300 transition-all duration-300 flex flex-col"
+                    >
+                        <div className="h-1 w-full bg-gradient-to-r from-violet-600 to-purple-600 absolute top-0 left-0" />
+                        <div className="p-5 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-purple-700 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                    <FileCheck size={22} />
+                                </div>
+                                <div className="pt-1">
+                                    <div className="inline-flex items-center gap-1 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-md mb-1">
+                                        <Sparkles size={9} className="text-violet-600" />
+                                        <span className="text-[8px] font-black text-violet-700 uppercase tracking-widest">Evaluación IA</span>
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Tareas IA</h2>
+                                </div>
+                            </div>
+                            <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
+                                Digitalización y calificación inteligente de actividades escolares con retroalimentación personalizada.
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Brain size={12} /> Rúbricas Inteligentes</span>
+                                <div className="text-violet-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    Abrir <ExternalLink size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Semáforo de Ruido Card */}
+                    <div
+                        onClick={() => window.open('https://semaforo.iaparamaestros.org', '_blank')}
+                        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-emerald-300 transition-all duration-300 flex flex-col"
+                    >
+                        <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-600 absolute top-0 left-0" />
+                        <div className="p-5 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                    <Volume2 size={22} />
+                                </div>
+                                <div className="pt-1">
+                                    <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md mb-1">
+                                        <Sparkles size={9} className="text-emerald-600" />
+                                        <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">Gestión de Aula</span>
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Semáforo de Ruido</h2>
+                                </div>
+                            </div>
+                            <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
+                                Monitor acústico interactivo en tiempo real con alertas visuales de decibeles para mantener el orden en el aula.
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Volume2 size={12} /> Sensor Acústico</span>
+                                <div className="text-emerald-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                                     Abrir <ExternalLink size={14} />
                                 </div>
                             </div>
@@ -286,10 +348,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                 {/* Bottom note */}
                 <p className="text-center text-xs text-slate-400 font-medium mt-10">
-                    Portal local · AprendIA en <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">localhost:3001</code>
+                    EduPortal · Ecosistema de Inteligencia Artificial para la Educación Mexicana
                 </p>
-            </section >
-        </div >
+            </section>
+        </div>
     );
 };
 
