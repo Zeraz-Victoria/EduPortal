@@ -1,37 +1,36 @@
-import OpenAI from "openai";
 import { IncidentData, AnalysisResult, RiskLevel } from '../types';
 import { LEGAL_FRAMEWORK, SEV_PROTOCOLS } from '../constants';
 
-// Inicializamos el cliente (Gemini 2.5 Flash con fallback a DeepSeek)
-const getClient = () => {
-  const apiKey =
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    import.meta.env.VITE_DEEPSEEK_API_KEY ||
-    "missing-key";
-
-  const isDeepSeek =
-    !import.meta.env.VITE_GEMINI_API_KEY &&
-    (import.meta.env.VITE_DEEPSEEK_API_KEY?.startsWith("sk-") ?? false);
-
-  if (!isDeepSeek && apiKey !== "missing-key") {
-    return {
-      client: new OpenAI({
-        apiKey,
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-        dangerouslyAllowBrowser: true
-      }),
-      model: "gemini-3-flash-preview"
-    };
+const callGemini = async (systemInstruction: string, userPrompt: string): Promise<string> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("No se detectó la clave VITE_GEMINI_API_KEY en las variables de entorno.");
   }
 
-  return {
-    client: new OpenAI({
-      apiKey,
-      baseURL: "https://api.deepseek.com",
-      dangerouslyAllowBrowser: true
-    }),
-    model: "deepseek-chat"
-  };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: userPrompt }] }],
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1
+      }
+    })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Error de conexión con Gemini (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini no devolvió contenido.");
+  return text;
 };
 
 export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResult> => {
@@ -120,20 +119,7 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
   `;
 
   try {
-    const { client, model } = getClient();
-    const response = await client.chat.completions.create({
-      model: model,
-      messages: [
-        { role: "system", content: systemInstruction },
-        { role: "user", content: userPrompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      top_p: 1.0
-    });
-
-    const text = response.choices[0].message.content;
-    if (!text) throw new Error("El servicio de IA no devolvió contenido.");
+    const text = await callGemini(systemInstruction, userPrompt);
 
     const raw = JSON.parse(text);
 

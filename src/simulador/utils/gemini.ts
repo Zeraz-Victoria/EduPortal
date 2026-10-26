@@ -1,12 +1,11 @@
-import OpenAI from "openai";
 import { Question } from "../types";
 
-// HELPER SEGURO PARA OBTENER LA API KEY (DEEPSEEK)
+// HELPER SEGURO PARA OBTENER LA API KEY (GEMINI)
 const getApiKey = (): string | undefined => {
   let key: string | undefined = undefined;
   try {
     // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
+    if (typeof import.meta !== "undefined" && import.meta.env) {
       // @ts-ignore
       key = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_DEEPSEEK_API_KEY;
     }
@@ -14,7 +13,7 @@ const getApiKey = (): string | undefined => {
 
   if (!key) {
     try {
-      if (typeof process !== 'undefined' && process.env) {
+      if (typeof process !== "undefined" && process.env) {
         key = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
       }
     } catch (e) { }
@@ -26,19 +25,9 @@ export const generateSingleQuestion = async (level: string, avoidTopics: string[
   const apiKey = getApiKey();
 
   if (!apiKey) {
-    console.warn("API Key de DeepSeek no encontrada. Usando modo offline.");
+    console.warn("API Key no encontrada. Usando modo offline.");
     throw new Error("API_KEY_MISSING");
   }
-
-  const isDeepSeek = !import.meta.env?.VITE_GEMINI_API_KEY && apiKey.startsWith("sk-");
-  const baseURL = isDeepSeek ? "https://api.deepseek.com" : "https://generativelanguage.googleapis.com/v1beta/openai/";
-  const model = isDeepSeek ? "deepseek-chat" : "gemini-3-flash-preview";
-
-  const openai = new OpenAI({
-    baseURL,
-    apiKey,
-    dangerouslyAllowBrowser: true
-  });
 
   // PROMPT OPTIMIZADO PARA VELOCIDAD Y DIFICULTAD
   const prompt = `
@@ -65,24 +54,34 @@ export const generateSingleQuestion = async (level: string, avoidTopics: string[
   `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: model,
-      messages: [
-        { role: "system", content: "Eres un experto creador de reactivos CENEVAL formato USICAMM. Respondes exclusivamente con arreglos JSON válidos." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.8,
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: { parts: [{ text: "Eres un experto creador de reactivos CENEVAL formato USICAMM. Respondes exclusivamente con arreglos JSON válidos." }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.8
+        }
+      })
     });
 
-    const text = response.choices[0].message?.content || "";
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Error de Gemini (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (!text) throw new Error("La API no devolvió texto.");
 
     const questionData = JSON.parse(text) as Question;
     return questionData;
 
   } catch (error) {
-    console.error("Error generando pregunta con DeepSeek:", error);
+    console.error("Error generando pregunta con Gemini:", error);
     throw error;
   }
 };

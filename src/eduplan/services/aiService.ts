@@ -1,37 +1,37 @@
 
-import OpenAI from "openai";
 import { LessonPlan, PlanningRequest } from "../types";
 import { EJES_ARTICULADORES_NEM } from "../constants";
 
-const getClient = () => {
-  const apiKey =
-    (import.meta as any).env.VITE_GEMINI_API_KEY ||
-    (import.meta as any).env.VITE_DEEPSEEK_API_KEY ||
-    "missing-key";
-
-  const isDeepSeek =
-    !(import.meta as any).env.VITE_GEMINI_API_KEY &&
-    ((import.meta as any).env.VITE_DEEPSEEK_API_KEY?.startsWith("sk-") ?? false);
-
-  if (!isDeepSeek && apiKey !== "missing-key") {
-    return {
-      client: new OpenAI({
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-        apiKey,
-        dangerouslyAllowBrowser: true
-      }),
-      model: "gemini-3-flash-preview"
-    };
+const callGeminiPlan = async (systemInstruction: string, userPrompt: string): Promise<string> => {
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("No se detectó la clave VITE_GEMINI_API_KEY en las variables de entorno.");
   }
 
-  return {
-    client: new OpenAI({
-      baseURL: "https://api.deepseek.com",
-      apiKey,
-      dangerouslyAllowBrowser: true
-    }),
-    model: "deepseek-chat"
-  };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: userPrompt }] }],
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1
+      }
+    })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Error de conexión con Gemini (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini no devolvió contenido.");
+  return text;
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -163,26 +163,7 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
   `;
 
   try {
-    const { client, model } = getClient();
-    const response = await client.chat.completions.create({
-      model: model,
-      messages: [
-        { role: "system", content: systemInstruction.trim() },
-        { role: "user", content: userPrompt.trim() }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 8192
-    });
-
-    const finishReason = response.choices[0].finish_reason;
-    if (finishReason === "length") {
-      throw new Error("Respuesta truncada por límites de longitud. Por favor solicita menos sesiones o pide menos detalle.");
-    }
-
-    const content = response.choices[0].message.content;
-    if (!content) throw new Error("No se recibió contenido del servicio de IA.");
-
+    const content = await callGeminiPlan(systemInstruction.trim(), userPrompt.trim());
     return JSON.parse(content) as LessonPlan;
 
   } catch (error: any) {
