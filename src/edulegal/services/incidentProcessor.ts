@@ -97,6 +97,17 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
     `}
 
     # REGLA DE EXCLUSIVIDAD Y PRECISIÓN
+    - REGLA DE OBLIGATORIEDAD DE LOS 4 ROLES EN EL PLAN DE ACCIÓN:
+      El arreglo "plan" DEBE CONTENER OBLIGATORIAMENTE 4 ELEMENTOS con los roles exactos:
+      1) "Docente"
+      2) "Director"
+      3) "Padre / Madre / Tutor"
+      4) "Alumno(s)"
+      Detalla con precisión quirúrgica qué debe hacer cada uno según el protocolo oficial.
+
+    - SANCIONES Y CONSECUENCIAS LEGALES (En el campo "measures"):
+      Cita expresamente las medidas disciplinarias formativas para el alumno (sin expulsión arbitraria), las responsabilidades administrativas del personal (Medida Preventiva Provisional, LRA Veracruz, Código de Conducta SEV 2026) si es que incurrió en falta u omisión, y la corresponsabilidad legal de los tutores.
+
     - No inventes artículos ni cites leyes de estados distintos a ${SELECTED_STATE}. 
     - Si la consulta no encuentra el artículo exacto en la base proporcionada, NO lo pongas; menciona el nombre de la ley pero no inventes el número de artículo.
 
@@ -145,10 +156,19 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
       "entidad": "${SELECTED_STATE}",
       "class": "Tipo específico de incidente",
       "risk": "Bajo|Medio|Alto",
-      "plan": [{"role": "Rol responsable", "actions": ["Acción + (Doc: [Nombre], Art: [N°])"]}],
-      "base": [{"doc": "Nombre completo del documento", "art": "N° de artículo", "desc": "Resumen del fundamento"}],
-      "measures": ["Medidas formativas"],
-      "agreements": ["Compromisos para el acta"]
+      "plan": [
+        {"role": "Docente", "actions": ["Acción pedagógica, bitácora y contención inmediata + (Doc: [Nombre], Art: [N°])"]},
+        {"role": "Director", "actions": ["Acción de activación de protocolo, notificación a supervisión (plazo 24h), acta de hechos y canalización + (Doc: [Nombre], Art: [N°])"]},
+        {"role": "Padre / Madre / Tutor", "actions": ["Acción de asistencia obligatoria, firma de acuerdos y seguimiento en el hogar + (Doc: [Nombre], Art: [N°])"]},
+        {"role": "Alumno(s)", "actions": ["Acción de compromiso de convivencia, mediación escolar o medidas restaurativas + (Doc: [Nombre], Art: [N°])"]}
+      ],
+      "base": [{"doc": "Nombre completo del documento", "art": "N° de artículo", "desc": "Resumen del fundamento legal"}],
+      "measures": [
+        "Para Alumno(s): Medida formativa y proporcional específica (Gaceta 356 y Ley 303)",
+        "Para Personal Escolar (si aplica): Medida Preventiva Provisional de separación inmediata y proceso administrativo (Gaceta 198 de 2026, LRA Veracruz)",
+        "Para Padres/Tutores: Obligación de corresponsabilidad (Ley 573 y Ley General de Educación)"
+      ],
+      "agreements": ["Compromisos específicos de reparación del daño y no repetición para el acta"]
     }
   `;
 
