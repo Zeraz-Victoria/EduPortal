@@ -210,7 +210,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 </div>
                             </div>
                             <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
-                                Control de asistencia institucional con credenciales QR y NFC, notificaciones automáticas y reportes.
+                                Control de asistencia institucional con credenciales QR.
                             </p>
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware / Web</span>
@@ -241,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 </div>
                             </div>
                             <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
-                                Gestión escolar de pase de lista tradicional, control de inasistencias, retardos, justificaciones y reportes por grupo.
+                                Gestión de asistencia escolar y pase de lista con NFC, notificaciones automáticas y reportes.
                             </p>
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ClipboardCheck size={12} /> Gestión Escolar</span>
