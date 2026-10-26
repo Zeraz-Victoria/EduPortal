@@ -8,14 +8,14 @@ const getApiKey = (): string | undefined => {
     // @ts-ignore
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       // @ts-ignore
-      key = import.meta.env.VITE_DEEPSEEK_API_KEY;
+      key = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_DEEPSEEK_API_KEY;
     }
   } catch (e) { }
 
   if (!key) {
     try {
       if (typeof process !== 'undefined' && process.env) {
-        key = process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+        key = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
       }
     } catch (e) { }
   }
@@ -30,9 +30,13 @@ export const generateSingleQuestion = async (level: string, avoidTopics: string[
     throw new Error("API_KEY_MISSING");
   }
 
+  const isDeepSeek = !import.meta.env?.VITE_GEMINI_API_KEY && apiKey.startsWith("sk-");
+  const baseURL = isDeepSeek ? "https://api.deepseek.com" : "https://generativelanguage.googleapis.com/v1beta/openai/";
+  const model = isDeepSeek ? "deepseek-chat" : "gemini-3-flash-preview";
+
   const openai = new OpenAI({
-    baseURL: 'https://api.deepseek.com',
-    apiKey: apiKey,
+    baseURL,
+    apiKey,
     dangerouslyAllowBrowser: true
   });
 
@@ -62,7 +66,7 @@ export const generateSingleQuestion = async (level: string, avoidTopics: string[
 
   try {
     const response = await openai.chat.completions.create({
-      model: "deepseek-chat",
+      model: model,
       messages: [
         { role: "system", content: "Eres un experto creador de reactivos CENEVAL formato USICAMM. Respondes exclusivamente con arreglos JSON válidos." },
         { role: "user", content: prompt }

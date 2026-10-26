@@ -2,13 +2,36 @@ import OpenAI from "openai";
 import { IncidentData, AnalysisResult, RiskLevel } from '../types';
 import { LEGAL_FRAMEWORK, SEV_PROTOCOLS } from '../constants';
 
-// Inicializamos el cliente de DeepSeek (usando el SDK de OpenAI)
+// Inicializamos el cliente (Gemini 2.5 Flash con fallback a DeepSeek)
 const getClient = () => {
-  return new OpenAI({
-    apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || "missing-key",
-    baseURL: "https://api.deepseek.com",
-    dangerouslyAllowBrowser: true
-  });
+  const apiKey =
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.VITE_DEEPSEEK_API_KEY ||
+    "missing-key";
+
+  const isDeepSeek =
+    !import.meta.env.VITE_GEMINI_API_KEY &&
+    (import.meta.env.VITE_DEEPSEEK_API_KEY?.startsWith("sk-") ?? false);
+
+  if (!isDeepSeek && apiKey !== "missing-key") {
+    return {
+      client: new OpenAI({
+        apiKey,
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        dangerouslyAllowBrowser: true
+      }),
+      model: "gemini-3-flash-preview"
+    };
+  }
+
+  return {
+    client: new OpenAI({
+      apiKey,
+      baseURL: "https://api.deepseek.com",
+      dangerouslyAllowBrowser: true
+    }),
+    model: "deepseek-chat"
+  };
 };
 
 export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResult> => {
@@ -97,9 +120,9 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
   `;
 
   try {
-    const client = getClient();
+    const { client, model } = getClient();
     const response = await client.chat.completions.create({
-      model: "deepseek-chat",
+      model: model,
       messages: [
         { role: "system", content: systemInstruction },
         { role: "user", content: userPrompt }
@@ -110,7 +133,7 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
     });
 
     const text = response.choices[0].message.content;
-    if (!text) throw new Error("DeepSeek no devolvió contenido.");
+    if (!text) throw new Error("El servicio de IA no devolvió contenido.");
 
     const raw = JSON.parse(text);
 
@@ -138,7 +161,7 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
       finalAgreements: raw.agreements || []
     } as AnalysisResult;
   } catch (error: any) {
-    console.error("DeepSeek Service Error:", error);
-    throw new Error(error.message || "Falló la conexión con el servicio de DeepSeek.");
+    console.error("AI Service Error:", error);
+    throw new Error(error.message || "Falló la conexión con el servicio de IA.");
   }
 };

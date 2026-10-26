@@ -3,13 +3,35 @@ import OpenAI from "openai";
 import { LessonPlan, PlanningRequest } from "../types";
 import { EJES_ARTICULADORES_NEM } from "../constants";
 
-const getDeepseekClient = () => {
-  const apiKey = (import.meta as any).env.VITE_DEEPSEEK_API_KEY || "missing-key";
-  return new OpenAI({
-    baseURL: "https://api.deepseek.com",
-    apiKey,
-    dangerouslyAllowBrowser: true
-  });
+const getClient = () => {
+  const apiKey =
+    (import.meta as any).env.VITE_GEMINI_API_KEY ||
+    (import.meta as any).env.VITE_DEEPSEEK_API_KEY ||
+    "missing-key";
+
+  const isDeepSeek =
+    !(import.meta as any).env.VITE_GEMINI_API_KEY &&
+    ((import.meta as any).env.VITE_DEEPSEEK_API_KEY?.startsWith("sk-") ?? false);
+
+  if (!isDeepSeek && apiKey !== "missing-key") {
+    return {
+      client: new OpenAI({
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        apiKey,
+        dangerouslyAllowBrowser: true
+      }),
+      model: "gemini-3-flash-preview"
+    };
+  }
+
+  return {
+    client: new OpenAI({
+      baseURL: "https://api.deepseek.com",
+      apiKey,
+      dangerouslyAllowBrowser: true
+    }),
+    model: "deepseek-chat"
+  };
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -19,11 +41,10 @@ export const generateLessonPlanStream = async (
   onChunk: (text: string) => void,
   retries = 3
 ): Promise<LessonPlan> => {
-  const apiKey = (import.meta as any).env.VITE_DEEPSEEK_API_KEY;
-
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    throw new Error("CONFIGURACIÓN REQUERIDA: No se detectó una VITE_DEEPSEEK_API_KEY en el archivo .env.");
-  }
+  const apiKey =
+    (import.meta as any).env.VITE_GEMINI_API_KEY ||
+    (import.meta as any).env.VITE_DEEPSEEK_API_KEY ||
+    "missing-key";
 
   const systemInstruction = `
 # PERFIL: CONSULTOR PEDAGÓGICO DE ÉLITE Y ESPECIALISTA EN DISEÑO CURRICULAR NEM
@@ -142,9 +163,9 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
   `;
 
   try {
-    const deepseek = getDeepseekClient();
-    const response = await deepseek.chat.completions.create({
-      model: "deepseek-chat",
+    const { client, model } = getClient();
+    const response = await client.chat.completions.create({
+      model: model,
       messages: [
         { role: "system", content: systemInstruction.trim() },
         { role: "user", content: userPrompt.trim() }
@@ -160,7 +181,7 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
     }
 
     const content = response.choices[0].message.content;
-    if (!content) throw new Error("No se recibió contenido de DeepSeek.");
+    if (!content) throw new Error("No se recibió contenido del servicio de IA.");
 
     return JSON.parse(content) as LessonPlan;
 
