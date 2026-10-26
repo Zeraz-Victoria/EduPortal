@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay, QrCode, FileCheck, Volume2 } from 'lucide-react';
+import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay, QrCode, FileCheck, Volume2, ClipboardCheck } from 'lucide-react';
 
 interface LandingPageProps {
     onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/simulador') => void;
@@ -215,6 +215,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={12} /> Hardware / Web</span>
                                 <div className="text-orange-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    Abrir <ExternalLink size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sistema Asistencia Card */}
+                    <div
+                        onClick={() => window.open('https://asistencia.iaparamaestros.org/login.html', '_blank')}
+                        className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-300 transition-all duration-300 flex flex-col"
+                    >
+                        <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-600 absolute top-0 left-0" />
+                        <div className="p-5 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                    <ClipboardCheck size={22} />
+                                </div>
+                                <div className="pt-1">
+                                    <div className="inline-flex items-center gap-1 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md mb-1">
+                                        <Sparkles size={9} className="text-blue-600" />
+                                        <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest">Pase de Lista Digital</span>
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight">Sistema Asistencia</h2>
+                                </div>
+                            </div>
+                            <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
+                                Gestión escolar de pase de lista tradicional, control de inasistencias, retardos, justificaciones y reportes por grupo.
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><ClipboardCheck size={12} /> Gestión Escolar</span>
+                                <div className="text-blue-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                                     Abrir <ExternalLink size={14} />
                                 </div>
                             </div>
