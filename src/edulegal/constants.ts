@@ -10,43 +10,37 @@ export const MEXICO_STATES = [
 
 // Base normativa completa para referencia (Base de Conocimiento del Sistema)
 export const LEGAL_FRAMEWORK = {
-  // --- NIVEL CONSTITUCIONAL Y SUPREMO ---
-  CONST: 'Constitución Política de los Estados Unidos Mexicanos (Arts. 1, 3, 4 y 31 Fracc. I)',
-  INTL: 'Convención sobre los Derechos del Niño y Tratados Internacionales de DDHH',
+  // --- NIVEL CONSTITUCIONAL Y TRATADOS INTERNACIONALES ---
+  CONST: "Constitución Política de los Estados Unidos Mexicanos (Arts. 1, 3, 4 y 31 Fracc. I, 73, 123)",
+  INTL: "Convención sobre los Derechos del Niño y Convención Americana sobre Derechos Humanos (Pacto de San José)",
+  CEDAW: "Convención sobre la Eliminación de Todas las Formas de Discriminación contra la Mujer (CEDAW)",
+  BELEM_DO_PARA: "Convención Interamericana para Prevenir, Sancionar y Erradicar la Violencia contra la Mujer (Belém do Pará)",
 
-  // --- LEYES GENERALES (FEDERALES) ---
-  LGE: 'Ley General de Educación (Vigente)',
-  LGDNNA: 'Ley General de los Derechos de Niñas, Niños y Adolescentes',
-  LGSCMM: 'Ley General del Sistema para la Carrera de las Maestras y los Maestros',
-  LMEJOREDU: 'Ley Reglamentaria del Art. 3° en materia de Mejora Continua de la Educación',
-  LGAMVLV: 'Ley General de Acceso de las Mujeres a una Vida Libre de Violencia',
-  LGIN: 'Ley General para la Inclusión de las Personas con Discapacidad',
-  LFRSP: 'Ley Federal de Responsabilidades de los Servidores Públicos',
+  // --- LEYES GENERALES Y FEDERALES ---
+  LGE: "Ley General de Educación (Arts. 7, 73, 74, 128)",
+  LGDNNA: "Ley General de los Derechos de Niñas, Niños y Adolescentes (Arts. 46, 47, 103, 105)",
+  LGRA: "Ley General de Responsabilidades Administrativas",
+  LFPED: "Ley Federal para Prevenir y Eliminar la Discriminación",
+  LGAMVLV: "Ley General de Acceso de las Mujeres a una Vida Libre de Violencia",
+  LGISMH: "Ley General para la Igualdad Sustantiva entre Mujeres y Hombres",
 
-  // --- NORMATIVA ESTATAL (VERACRUZ) ---
-  LEEV: 'Ley de Educación del Estado de Veracruz de Ignacio de la Llave',
-  L303: 'Ley No. 303 Contra el Acoso Escolar para el Estado de Veracruz',
-  L573: 'Ley No. 573 de los Derechos de NNA del Estado de Veracruz',
-  CPV: 'Código Penal para el Estado de Veracruz',
-  LRESP_SERV_VER: 'Ley de Responsabilidades Administrativas para el Estado de Veracruz',
+  // --- NORMATIVA Y PROTOCOLOS OFICIALES DE VERACRUZ (ACTUALIZADOS) ---
+  LGIN: "Ley General para la Inclusión de las Personas con Discapacidad",
+  LFRSP: "Ley Federal de Responsabilidades de los Servidores Públicos",
+  RAPF: "Reglamento de Asociaciones de Padres de Familia",
+  PROTOCOLO_SEV_356: "Protocolos para la Identificación, Prevención e Intervención en el Acoso Escolar, el Maltrato Infantil y Actos de Connotación Sexual para los Planteles Educativos del Estado de Veracruz (Gaceta Oficial No. Ext. 356)",
+  PROTOCOLO_ACOSO_LABORAL_SEV: "Protocolo de Atención Frente a Casos de Acoso Laboral dentro de la Secretaría de Educación de Veracruz (SEV)",
+  CODIGO_CONDUCTA_SEV_2026: "Código de Conducta de la Secretaría de Educación de Veracruz (Gaceta Oficial Ext. 198 de 19 de mayo de 2026)",
+  CODIGO_ETICA_VER: "Código de Ética de las Personas Servidoras Públicas del Poder Ejecutivo del Estado de Veracruz",
+  L303: "Ley No. 303 de Prevención y Atención del Acoso Escolar para el Estado de Veracruz de Ignacio de la Llave (Arts. 7, 12, 14, 22, 42, 46)",
+  LRA_VER: "Ley de Responsabilidades Administrativas para el Estado de Veracruz de Ignacio de la Llave",
+  LEEV: "Ley de Educación del Estado de Veracruz de Ignacio de la Llave",
+  L573: "Ley No. 573 de los Derechos de Niñas, Niños y Adolescentes del Estado de Veracruz (Art. 6 Interés Superior de la Niñez)",
+  CPV: "Código Penal para el Estado de Veracruz (Arts. 190 Bis Hostigamiento Sexual, Abuso Sexual, Violación, Violencia Familiar)",
 
-  // --- REGLAMENTOS Y ACUERDOS ---
-  RAPF: 'Reglamento de Asociaciones de Padres de Familia',
-  RCGTSEP: 'Reglamento de las Condiciones Generales de Trabajo del Personal de la SEP',
-  ACUERDO_716: 'Acuerdo 716 (Lineamientos para Consejos de Participación Social)',
-  ACUERDO_717: 'Acuerdo 717 (Lineamientos para la Gestión Escolar)',
-  ACUERDO_EVAL: 'Normas generales para la evaluación del aprendizaje (Acuerdo Vigente)',
-  LINEAMIENTOS_CTE: 'Lineamientos para la organización y funcionamiento de los Consejos Técnicos Escolares',
-
-  // --- DOCUMENTOS RECTORES DE LA FUNCIÓN ---
-  PERFILES_DOMINIOS: 'Marco para la Excelencia en la Enseñanza y la Gestión Escolar (Perfiles Profesionales USICAMM)',
-  MANUAL_ORG_SEC: 'Manual de Organización de la Escuela de Educación Secundaria',
-  MANUAL_ORG_PRI: 'Manual de Organización de la Escuela de Educación Primaria',
-
-  // --- PROTOCOLOS DE ACTUACIÓN ---
-  PROTOCOLO_SEV: 'Protocolo para la Prevención, Detección y Actuación en casos de Acoso Escolar, Maltrato Infantil y Actos de Connotación Sexual (SEV)',
-  PNCE: 'Programa Nacional de Convivencia Escolar (Documentos Base)',
-  CONVIVENCIA: 'Acuerdos de Convivencia Escolar del Plantel'
+  // Alias retrocompatibles
+  PROTOCOLO_SEV: "Protocolos SEV para Acoso Escolar, Maltrato Infantil y Connotación Sexual (Gaceta Oficial Ext. 356)",
+  CONVIVENCIA: "Protocolos de Convivencia Escolar y Acuerdos Escolares Vigentes"
 };
 
 export const SEV_PROTOCOLS = {

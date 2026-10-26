@@ -1,3 +1,4 @@
+import { VERACRUZ_OFFICIAL_PROTOCOLS_V2026 } from "../protocolos_veracruz/veracruzKnowledgeBase";
 import { IncidentData, AnalysisResult, RiskLevel } from '../types';
 import { LEGAL_FRAMEWORK, SEV_PROTOCOLS } from '../constants';
 
@@ -61,11 +62,11 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
   // Configuración dinámica por estado
   const SELECTED_STATE = data.state;
   // Solo tenemos fragmentos específicos para Veracruz por ahora
-  const HAS_LOCAL_PROTOCOLS = SELECTED_STATE === 'Veracruz';
+  const IS_VERACRUZ = SELECTED_STATE === "Veracruz";
 
-  const STATE_LEGAL_SNIPPETS = HAS_LOCAL_PROTOCOLS
-    ? JSON.stringify(LEGAL_FRAMEWORK) + "\n" + JSON.stringify(SEV_PROTOCOLS)
-    : "No hay protocolos específicos para este estado en la base local.";
+  const STATE_LEGAL_SNIPPETS = IS_VERACRUZ
+    ? VERACRUZ_OFFICIAL_PROTOCOLS_V2026 + "\n" + JSON.stringify(LEGAL_FRAMEWORK)
+    : "No hay protocolos estatales específicos cargados para esta entidad. Aplicar marco federal supletorio.";
 
   const FEDERAL_LEGAL_BASE = "Ley General de Educación (Arts. 7, 73, 74, 128), Ley General de los Derechos de Niñas, Niños y Adolescentes (Arts. 46, 47, 103, 105), Protocolos de Convivencia Escolar SEP (Federal).";
 
@@ -73,9 +74,27 @@ export const analyzeIncident = async (data: IncidentData): Promise<AnalysisResul
     # PERFIL: NÚCLEO LEGAL EDUCATIVO MÉXICO (ANTIGRAVITY)
     Eres un motor experto en Derecho Educativo Mexicano de alta precisión. Tu función es generar protocolos de actuación escolar basados estrictamente en la entidad federativa solicitada: ${SELECTED_STATE}.
 
-    # JERARQUÍA DE FUENTES (ESTRICTA)
-    1. **Contexto Estatal (${SELECTED_STATE}):** Utiliza exclusivamente ${STATE_LEGAL_SNIPPETS}.
-    2. **Normativa Federal:** Usa ${FEDERAL_LEGAL_BASE} solo como supletorio o si otorga mayor protección a Derechos Humanos.
+    # JERARQUÍA DE FUENTES Y OBLIGATORIEDAD:
+    ${IS_VERACRUZ ? `
+    # REGLA FUNDAMENTAL DE PROTOCOLOS PARA EL ESTADO DE VERACRUZ:
+    - Este incidente ocurre en el ESTADO DE VERACRUZ.
+    - Las acciones, medidas disciplinarias, medidas preventivas provisionales y fundamentos jurídicos DEBEN BASARSE OBLIGATORIA Y ESTRICTAMENTE en los nuevos protocolos oficiales de la Secretaría de Educación de Veracruz (SEV):
+      1. Gaceta Oficial No. Ext. 356 (Protocolos de Acoso Escolar, Maltrato Infantil y Actos de Connotación Sexual).
+      2. Protocolo de Acoso Laboral dentro de la Secretaría de Educación de Veracruz.
+      3. Código de Conducta de la SEV (Gaceta Oficial Ext. 198 de 19 de mayo de 2026).
+      4. Ley No. 303 de Prevención y Atención del Acoso Escolar para el Estado de Veracruz.
+      5. Ley de Responsabilidades Administrativas para el Estado de Veracruz (LRA Veracruz).
+      6. Ley No. 573 de los Derechos de Niñas, Niños y Adolescentes del Estado de Veracruz.
+      7. Código Penal para el Estado de Veracruz (Arts. 190 Bis Hostigamiento, Abuso Sexual, etc.).
+    - Prohibido citar leyes de otros estados de la república.
+    - Citar la Medida Preventiva Provisional de la SEV si hay involucrado personal docente o escolar en faltas graves o sexuales.
+    - Notificaciones obligatorias en Veracruz: Dirección Jurídica de la SEV, Fiscalía General del Estado de Veracruz (FGE), Procuraduría Estatal de Protección de NNA (DIF Veracruz) y Supervisión Escolar.
+    - Protocolo de Conocimiento Completo disponible para Veracruz:
+    ${STATE_LEGAL_SNIPPETS}
+    ` : `
+    1. **Contexto Estatal (${SELECTED_STATE}):** Utiliza las autoridades de ${SELECTED_STATE}.
+    2. **Normativa Federal:** Usa ${FEDERAL_LEGAL_BASE} como base general.
+    `}
 
     # REGLA DE EXCLUSIVIDAD Y PRECISIÓN
     - No inventes artículos ni cites leyes de estados distintos a ${SELECTED_STATE}. 
