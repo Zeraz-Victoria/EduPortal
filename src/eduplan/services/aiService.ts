@@ -2,36 +2,60 @@
 import { LessonPlan, PlanningRequest } from "../types";
 import { EJES_ARTICULADORES_NEM } from "../constants";
 
+const GEMINI_MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+  "gemini-3-flash-preview"
+];
+
 const callGeminiPlan = async (systemInstruction: string, userPrompt: string): Promise<string> => {
   const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("No se detectó la clave VITE_GEMINI_API_KEY en las variables de entorno.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+  let lastError: any = null;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.1
+  for (const model of GEMINI_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userPrompt }] }],
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        if (res.status === 503 || res.status === 429) {
+          lastError = new Error(`Modelo ${model} ocupado (${res.status})`);
+          continue;
+        }
+        throw new Error(`Error de conexión con Gemini (${res.status}): ${errorText}`);
       }
-    })
-  });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Error de conexión con Gemini (${res.status}): ${errorText}`);
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error("Gemini no devolvió contenido.");
+      return text;
+    } catch (err: any) {
+      lastError = err;
+      if (err.message?.includes("503") || err.message?.includes("429") || err.message?.includes("ocupado")) {
+        continue;
+      }
+      throw err;
+    }
   }
 
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Gemini no devolvió contenido.");
-  return text;
+  throw lastError || new Error("Los modelos de Gemini están experimentando alta demanda. Por favor reintenta en un momento.");
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
