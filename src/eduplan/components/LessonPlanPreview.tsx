@@ -152,6 +152,29 @@ const LessonPlanPreview: React.FC<Props> = ({ plan }) => {
               ]
             })),
 
+            ...(safeArray(plan.libros_texto_recomendados).length > 0 ? [
+              new Paragraph({ text: "LIBROS DE TEXTO GRATUITOS RECOMENDADOS (SEP)", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "LIBRO Y PÁGINAS", bold: true, color: "FFFFFF" })] })], shading: { fill: "d97706", type: ShadingType.CLEAR } }),
+                      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "TEMA / PROYECTO", bold: true, color: "FFFFFF" })] })], shading: { fill: "d97706", type: ShadingType.CLEAR } }),
+                      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "APORTE AL DIAGNÓSTICO", bold: true, color: "FFFFFF" })] })], shading: { fill: "d97706", type: ShadingType.CLEAR } }),
+                    ]
+                  }),
+                  ...safeArray(plan.libros_texto_recomendados).map(r => new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${r.libro} (${r.paginas})`, bold: true })] })] }),
+                      new TableCell({ children: [new Paragraph({ text: safeStr(r.tema_o_proyecto) })] }),
+                      new TableCell({ children: [new Paragraph({ text: safeStr(r.justificacion_diagnostico) })] }),
+                    ]
+                  }))
+                ]
+              })
+            ] : []),
+
             new Paragraph({ text: "SECUENCIA DIDÁCTICA", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
             ...safeArray(plan.secuencia_didactica).flatMap((fase, fIdx) => [
               new Paragraph({ children: [new TextRun({ text: `FASE ${fIdx + 1}: ${safeStr(fase.fase_nombre).toUpperCase()}`, bold: true, size: 28 })], spacing: { before: 200, after: 200 } }),
@@ -289,7 +312,30 @@ const LessonPlanPreview: React.FC<Props> = ({ plan }) => {
         columnStyles: { 0: { cellWidth: 35, fontStyle: 'bold' } },
         margin: { left: margin, right: margin }
       });
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+      if (safeArray(plan.libros_texto_recomendados).length > 0) {
+        if (currentY > 230) { doc.addPage(); currentY = 20; }
+        autoTable(doc, {
+          startY: currentY,
+          head: [['LIBRO Y PÁGINAS', 'TEMA / PROYECTO', 'VINCULACIÓN AL DIAGNÓSTICO']],
+          body: safeArray(plan.libros_texto_recomendados).map(r => [
+            `${r.libro}\n(${r.paginas})`,
+            r.tema_o_proyecto,
+            r.justificacion_diagnostico
+          ]) as any,
+          theme: 'grid',
+          headStyles: { fillColor: [217, 119, 6] as any, fontSize: 9 },
+          styles: { fontSize: 8, overflow: 'linebreak', cellPadding: 3 },
+          columnStyles: { 
+            0: { cellWidth: 45, fontStyle: 'bold' },
+            1: { cellWidth: 50 },
+            2: { cellWidth: 85 }
+          },
+          margin: { left: margin, right: margin }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 10;
+      }
 
       safeArray(plan.secuencia_didactica).forEach((fase, fIdx) => {
         if (currentY > 250) { doc.addPage(); currentY = 20; }
@@ -496,6 +542,68 @@ const LessonPlanPreview: React.FC<Props> = ({ plan }) => {
             </div>
           ))}
         </div>
+
+        {/* Sección de Libros de Texto Gratuitos SEP Recomendados para el Diagnóstico */}
+        {safeArray(plan.libros_texto_recomendados).length > 0 && (
+          <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-[2.5rem] p-8 md:p-10 border border-amber-200/80 shadow-premium space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/25 shrink-0">
+                  <BookOpen className="w-7 h-7" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-3 py-1 rounded-full inline-block">
+                      Colección Oficial SEP • {plan.encabezado?.grado || 'Secundaria'}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full inline-block">
+                      Páginas Verificadas
+                    </span>
+                  </div>
+                  <h4 className="text-2xl font-display font-black text-slate-900 tracking-tight mt-1">
+                    Libros de Texto Recomendados según el Diagnóstico
+                  </h4>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 max-w-md font-medium">
+                Páginas y proyectos concretos de los libros de texto de secundaria sugeridos para andamiar y resolver la problemática descrita en el diagnóstico del aula.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {safeArray(plan.libros_texto_recomendados).map((rec, idx) => (
+                <div key={idx} className="bg-white rounded-3xl p-6 border border-amber-200/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200/50 line-clamp-1">
+                        {rec.libro}
+                      </span>
+                      <span className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[11px] font-black px-3 py-1 rounded-xl shrink-0 shadow-sm">
+                        {rec.paginas}
+                      </span>
+                    </div>
+                    <h5 className="font-display font-bold text-slate-900 text-base leading-snug">
+                      {rec.tema_o_proyecto}
+                    </h5>
+                    {rec.campo && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Campo: {rec.campo}
+                      </span>
+                    )}
+                  </div>
+                  <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-800 mb-1 flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-amber-600" /> ¿Por qué apoya a tu diagnóstico?
+                    </p>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {rec.justificacion_diagnostico}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-16">

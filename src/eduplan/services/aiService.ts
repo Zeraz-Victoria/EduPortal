@@ -1,5 +1,6 @@
 
-import { LessonPlan, PlanningRequest } from "../types";
+import { LessonPlan, PlanningRequest, LibroRecomendado } from "../types";
+import { findRecommendedBooks, normalizeSecundariaGrade, LibroItem } from "../libros/secundariaBooksCatalog";
 import { EJES_ARTICULADORES_NEM } from "../constants";
 
 const GEMINI_MODELS = [
@@ -70,6 +71,18 @@ export const generateLessonPlanStream = async (
     (import.meta as any).env.VITE_DEEPSEEK_API_KEY ||
     "missing-key";
 
+  // Detección de Libros de Texto Gratuitos (1°, 2° y 3° de Secundaria)
+  const isSecundaria = normalizeSecundariaGrade(params.grado) !== null || (params.fase && params.fase.includes('6'));
+  const candidateBooks: LibroItem[] = isSecundaria 
+    ? findRecommendedBooks(params.grado, params.contextoAdicional, 8)
+    : [];
+
+  const booksPromptSection = candidateBooks.length > 0 
+    ? candidateBooks.map((b, i) => 
+        `  ${i + 1}. Libro: "${b.libro}" | Páginas: ${b.paginas} | Campo: ${b.campo} | Tema/Proyecto: "${b.tema_o_proyecto}"${b.resumen ? ` | Síntesis: "${b.resumen.substring(0, 150)}..."` : ''}`
+      ).join('\n')
+    : 'No aplican libros de secundaria para esta fase o grado.';
+
   const systemInstruction = `
 # PERFIL: CONSULTOR PEDAGÓGICO DE ÉLITE Y ESPECIALISTA EN DISEÑO CURRICULAR NEM
 Eres un asesor pedagógico experto en la Nueva Escuela Mexicana (NEM) y el Codiseño Curricular. Tu misión es estructurar planos didácticos altamente contextualizados, rigurosos y respetuosos de los planes de estudio vigentes.
@@ -125,6 +138,9 @@ Genera una planeación didáctica en formato JSON para:
 ### ⚠️ EJES ARTICULADORES OFICIALES (Elegir de 1 a 4 de esta lista exacta):
 ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
 
+### 📚 CATÁLOGO OFICIAL DE LIBROS DE TEXTO DISPONIBLES PARA ESTE GRADO (${params.grado}):
+${booksPromptSection}
+
 ### ESTRUCTURA DEL JSON REQUERIDA (Mantener claves y tipos de datos exactamente):
 {
   "encabezado": {
@@ -149,6 +165,15 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
       }
     ]
   },
+  "libros_texto_recomendados": [
+    {
+      "libro": "Nombre exacto del libro de texto SEP de la lista",
+      "paginas": "páginas exactas citadas (ej. págs. 118-122)",
+      "tema_o_proyecto": "Título exacto del proyecto o tema en el libro",
+      "campo": "Campo formativo correspondiente",
+      "justificacion_diagnostico": "Explicación detallada de cómo este texto/proyecto responde al diagnóstico local del docente."
+    }
+  ],
   "secuencia_didactica": [
     {
       "fase_nombre": "Nombre de la fase o etapa oficial de la metodología",
@@ -188,7 +213,22 @@ ${EJES_ARTICULADORES_NEM.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
 
   try {
     const content = await callGeminiPlan(systemInstruction.trim(), userPrompt.trim());
-    return JSON.parse(content) as LessonPlan;
+    const parsedPlan = JSON.parse(content) as LessonPlan;
+
+    // Asegurar recomendaciones de libros de texto con páginas exactas si es secundaria
+    if (candidateBooks.length > 0) {
+      if (!parsedPlan.libros_texto_recomendados || parsedPlan.libros_texto_recomendados.length === 0) {
+        parsedPlan.libros_texto_recomendados = candidateBooks.slice(0, 3).map(b => ({
+          libro: b.libro,
+          paginas: b.paginas,
+          tema_o_proyecto: b.tema_o_proyecto,
+          campo: b.campo,
+          justificacion_diagnostico: `Material didáctico seleccionado con páginas exactas para atender directamente la situación problemática de ${b.tema_o_proyecto.toLowerCase()} identificada en el diagnóstico del grupo.`
+        }));
+      }
+    }
+
+    return parsedPlan;
 
   } catch (error: any) {
     console.error("Error en AI Service:", error);
