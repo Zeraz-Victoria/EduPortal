@@ -10,6 +10,7 @@ import { ReportesView } from './components/ReportesView';
 import { SuperAdminView } from './components/SuperAdminView';
 import { AuthModal } from './components/AuthModal';
 import { LoginScreen } from './components/LoginScreen';
+import { KioscoStandaloneApp } from './components/KioscoStandaloneApp';
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { Libro, Prestamo, Socio, Computadora, EstadisticasBiblioteca, UsuarioSaaS, EscuelaSaaS } from './types';
@@ -316,16 +317,12 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
         )}
 
         {tabActiva === 'kiosco' && (
-          <KioscoView
-            libros={libros}
-            prestamos={prestamos}
-            socios={socios}
-            computadoras={computadoras}
-            escuelaId={activeEscuelaId}
-            onVolverAdmin={() => setTabActiva('catalogo')}
-            onAsignarPC={handleAsignarPC}
-            onLiberarPC={handleLiberarPC}
-            onDevolverPrestamo={handleDevolverPrestamo}
+          <KioscoStandaloneApp
+            escuelaIdInicial={activeEscuelaId}
+            onSalir={() => {
+              setTabActiva('catalogo');
+              cargarDatosTenant();
+            }}
           />
         )}
 

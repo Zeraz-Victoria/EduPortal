@@ -4,11 +4,13 @@ import EduPlanApp from './eduplan/App';
 import EduLegalApp from './edulegal/App';
 import SimuladorApp from './simulador/App';
 import BibliotecaApp from './biblioteca/App';
+import { KioscoStandaloneApp } from './biblioteca/components/KioscoStandaloneApp';
 
-type Route = '/' | '/eduplan' | '/edulegal' | '/simulador' | '/biblioteca';
+type Route = '/' | '/eduplan' | '/edulegal' | '/simulador' | '/biblioteca' | '/biblioteca/kiosco';
 
 function getRoute(): Route {
     const hash = window.location.hash.replace('#', '') || '/';
+    if (hash.startsWith('/biblioteca/kiosco')) return '/biblioteca/kiosco';
     if (hash === '/eduplan') return '/eduplan';
     if (hash === '/edulegal') return '/edulegal';
     if (hash === '/simulador') return '/simulador';
@@ -30,6 +32,7 @@ function App() {
         setRoute(to);
     };
 
+    if (route === '/biblioteca/kiosco') return <KioscoStandaloneApp onSalir={() => navigate('/biblioteca')} />;
     if (route === '/eduplan') return <EduPlanApp onBack={() => navigate('/')} />;
     if (route === '/edulegal') return <EduLegalApp onBack={() => navigate('/')} />;
     if (route === '/simulador') return <SimuladorApp onBack={() => navigate('/')} />;

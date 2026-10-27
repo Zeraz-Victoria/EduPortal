@@ -160,13 +160,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            <button
-              onClick={() => onCambiarTab('kiosco')}
-              className="hidden lg:inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm shadow-teal-500/25 transition-all"
-            >
-              <Sparkles size={14} />
-              <span>Kiosco Alumnos</span>
-            </button>
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button
+                onClick={() => window.open('#/biblioteca/kiosco', '_blank')}
+                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-sm shadow-teal-500/25 transition-all"
+                title="Abrir Kiosco de Autoservicio en una ventana independiente para alumnos"
+              >
+                <Sparkles size={14} />
+                <span>Abrir Kiosco (Nueva Ventana)</span>
+              </button>
+            </div>
           </div>
 
         </div>
