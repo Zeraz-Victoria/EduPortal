@@ -44,6 +44,7 @@ export interface Socio {
   email: string;
   telefono?: string;
   nfcUid?: string;
+  fotoUrl?: string;
   prestamosActivos: number;
   fechaRegistro: string;
 }

@@ -14,14 +14,20 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { Libro, Prestamo, Socio, Computadora } from '../types';
+import { ChipScannerBar } from './ChipScannerBar';
+import { reproducirSonido } from '../services/chipService';
+import { RotateCcw } from 'lucide-react';
 
 interface KioscoViewProps {
   libros: Libro[];
   prestamos: Prestamo[];
   socios: Socio[];
   computadoras: Computadora[];
+  escuelaId?: string;
   onVolverAdmin: () => void;
   onAsignarPC: (pcId: string, socioId: string, socioNombre: string) => void;
+  onLiberarPC?: (pcId: string) => void;
+  onDevolverPrestamo?: (prestamoId: string) => void;
 }
 
 export const KioscoView: React.FC<KioscoViewProps> = ({
@@ -29,8 +35,11 @@ export const KioscoView: React.FC<KioscoViewProps> = ({
   prestamos,
   socios,
   computadoras,
+  escuelaId = 'esc-101',
   onVolverAdmin,
-  onAsignarPC
+  onAsignarPC,
+  onLiberarPC,
+  onDevolverPrestamo
 }) => {
   const [seccion, setSeccion] = useState<'catalogo' | 'mis_prestamos' | 'pcs'>('catalogo');
   const [busqueda, setBusqueda] = useState('');
@@ -52,6 +61,23 @@ export const KioscoView: React.FC<KioscoViewProps> = ({
     setSocioConsultado(encontrado || null);
   };
 
+  const handleSocioIdentificadoConChip = (s: Socio) => {
+    setSocioConsultado(s);
+    setSeccion('mis_prestamos');
+  };
+
+  const handleDevolver = (prestamoId: string) => {
+    if (onDevolverPrestamo) {
+      reproducirSonido('devolver');
+      onDevolverPrestamo(prestamoId);
+    }
+  };
+
+  const pcActualDelSocio = useMemo(() => {
+    if (!socioConsultado) return null;
+    return computadoras.find(c => c.socioIdActual === socioConsultado.id) || null;
+  }, [socioConsultado, computadoras]);
+
   const misPrestamosActuales = useMemo(() => {
     if (!socioConsultado) return [];
     return prestamos.filter(p => p.socioId === socioConsultado.id && p.estado !== 'devuelto');
@@ -70,6 +96,13 @@ export const KioscoView: React.FC<KioscoViewProps> = ({
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      
+      {/* Barra de Lectura Automática de Chip NFC / RFID */}
+      <ChipScannerBar
+        escuelaId={escuelaId}
+        onSocioIdentificado={handleSocioIdentificadoConChip}
+        sociosDisponibles={socios}
+      />
       
       {/* Encabezado Kiosco con botón de salida */}
       <div className="bg-gradient-to-r from-teal-700 via-emerald-700 to-teal-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
@@ -246,13 +279,26 @@ export const KioscoView: React.FC<KioscoViewProps> = ({
                           <p className="text-xs text-slate-500">Prestado el {p.fechaPrestamo}</p>
                         </div>
 
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Fecha Límite</span>
-                          <span className={`font-mono font-bold text-sm ${esVencido ? 'text-rose-600' : 'text-slate-800'}`}>
-                            {p.fechaDevolucionEsperada}
-                          </span>
-                          {esVencido && (
-                            <span className="block text-[10px] font-bold text-rose-600">¡Vencido! Por favor entrégalo.</span>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Fecha Límite</span>
+                            <span className={`font-mono font-bold text-sm ${esVencido ? 'text-rose-600' : 'text-slate-800'}`}>
+                              {p.fechaDevolucionEsperada}
+                            </span>
+                            {esVencido && (
+                              <span className="block text-[10px] font-bold text-rose-600">¡Vencido! Por favor entrégalo.</span>
+                            )}
+                          </div>
+
+                          {onDevolverPrestamo && (
+                            <button
+                              onClick={() => handleDevolver(p.id)}
+                              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1 transition-all"
+                              title="Devolver libro"
+                            >
+                              <RotateCcw size={13} />
+                              <span>Devolver</span>
+                            </button>
                           )}
                         </div>
                       </div>

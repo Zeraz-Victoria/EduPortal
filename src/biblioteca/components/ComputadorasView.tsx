@@ -12,26 +12,39 @@ import {
   Wifi,
   Sparkles
 } from 'lucide-react';
-import { Computadora, Socio } from '../types';
+import { Computadora, Socio, Prestamo, Libro } from '../types';
+import { ChipScannerBar } from './ChipScannerBar';
+import { ChipActionModal } from './ChipActionModal';
 
 interface ComputadorasViewProps {
   computadoras: Computadora[];
   socios: Socio[];
+  prestamos?: Prestamo[];
+  libros?: Libro[];
+  escuelaId?: string;
   onAsignarPC: (pcId: string, socioId: string, socioNombre: string, minutos?: number) => void;
   onLiberarPC: (pcId: string) => void;
   onCambiarEstadoPC: (pcId: string, estado: 'disponible' | 'en_uso' | 'mantenimiento') => void;
+  onDevolverPrestamo?: (prestamoId: string) => void;
+  onCrearPrestamoRapido?: (libroId: string, socio: Socio, dias?: number) => void;
 }
 
 export const ComputadorasView: React.FC<ComputadorasViewProps> = ({
   computadoras,
   socios,
+  prestamos = [],
+  libros = [],
+  escuelaId = 'esc-101',
   onAsignarPC,
   onLiberarPC,
-  onCambiarEstadoPC
+  onCambiarEstadoPC,
+  onDevolverPrestamo = () => {},
+  onCrearPrestamoRapido = () => {}
 }) => {
   const [pcSeleccionada, setPcSeleccionada] = useState<Computadora | null>(null);
   const [socioIdSel, setSocioIdSel] = useState(socios[0]?.id || '');
   const [minutosSel, setMinutosSel] = useState<number>(60);
+  const [socioChipModal, setSocioChipModal] = useState<Socio | null>(null);
 
   const disponiblesCount = computadoras.filter(c => c.estado === 'disponible').length;
   const enUsoCount = computadoras.filter(c => c.estado === 'en_uso').length;
@@ -50,6 +63,13 @@ export const ComputadorasView: React.FC<ComputadorasViewProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Barra de Lectura de Chip NFC / RFID */}
+      <ChipScannerBar
+        escuelaId={escuelaId}
+        onSocioIdentificado={(s) => setSocioChipModal(s)}
+        sociosDisponibles={socios}
+      />
+
       {/* Banner Superior & Métricas */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-6 shadow-sm border border-slate-700/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
@@ -262,6 +282,21 @@ export const ComputadorasView: React.FC<ComputadorasViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Acción Rápida con Chip Identificado */}
+      <ChipActionModal
+        abierto={Boolean(socioChipModal)}
+        onCerrar={() => setSocioChipModal(null)}
+        socio={socioChipModal}
+        prestamosDelSocio={socioChipModal ? prestamos.filter(p => p.socioId === socioChipModal.id) : []}
+        computadoraDelSocio={socioChipModal ? computadoras.find(c => c.socioIdActual === socioChipModal.id) || null : null}
+        computadorasDisponibles={computadoras.filter(c => c.estado === 'disponible')}
+        librosDisponibles={libros.filter(l => l.ejemplaresDisponibles > 0)}
+        onDevolverPrestamo={onDevolverPrestamo}
+        onAsignarPC={onAsignarPC}
+        onLiberarPC={onLiberarPC}
+        onCrearPrestamoRapido={onCrearPrestamoRapido}
+      />
 
     </div>
   );

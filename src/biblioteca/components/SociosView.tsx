@@ -12,27 +12,37 @@ import {
   Printer, 
   QrCode, 
   CheckCircle,
-  Phone,
+  RefreshCw, 
+  Loader2, 
+  CheckCircle2,
   Mail
 } from 'lucide-react';
 import { Socio, RolSocio } from '../types';
+import { ChipScannerBar } from './ChipScannerBar';
+import { chipService } from '../services/chipService';
 
 interface SociosViewProps {
   socios: Socio[];
+  escuelaId?: string;
   onGuardarSocio: (socio: Socio) => void;
   onEliminarSocio: (id: string) => void;
+  onRecargarSocios?: () => void;
 }
 
 export const SociosView: React.FC<SociosViewProps> = ({
   socios,
+  escuelaId = 'esc-101',
   onGuardarSocio,
-  onEliminarSocio
+  onEliminarSocio,
+  onRecargarSocios
 }) => {
   const [busqueda, setBusqueda] = useState('');
   const [rolSel, setRolSel] = useState<'todos' | RolSocio>('todos');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [socioEnEdicion, setSocioEnEdicion] = useState<Socio | null>(null);
   const [credencialSocio, setCredencialSocio] = useState<Socio | null>(null);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [mensajeSync, setMensajeSync] = useState<string | null>(null);
 
   // Form State
   const [formNombre, setFormNombre] = useState('');
@@ -88,6 +98,23 @@ export const SociosView: React.FC<SociosViewProps> = ({
     setModalAbierto(false);
   };
 
+  const handleSincronizarAlumnos = async () => {
+    setSincronizando(true);
+    setMensajeSync(null);
+    try {
+      const res = await chipService.sincronizarAlumnosDesdeAsistencia(escuelaId);
+      setMensajeSync(res.mensaje);
+      if (res.success && onRecargarSocios) {
+        onRecargarSocios();
+      }
+    } catch (e: any) {
+      setMensajeSync('Error al sincronizar con el servidor de asistencia.');
+    } finally {
+      setSincronizando(false);
+      setTimeout(() => setMensajeSync(null), 5000);
+    }
+  };
+
   const sociosFiltrados = useMemo(() => {
     return socios.filter(s => {
       const matchRol = rolSel === 'todos' || s.rol === rolSel;
@@ -104,6 +131,23 @@ export const SociosView: React.FC<SociosViewProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Barra de Lectura de Chip NFC / RFID */}
+      <ChipScannerBar
+        escuelaId={escuelaId}
+        onSocioIdentificado={(s) => {
+          setBusqueda(s.nombre);
+          abrirEditarSocio(s);
+        }}
+        sociosDisponibles={socios}
+      />
+
+      {mensajeSync && (
+        <div className="p-3 bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 size={16} className="text-teal-600 shrink-0" />
+          <span>{mensajeSync}</span>
+        </div>
+      )}
+
       {/* Barra de Filtros y Búsqueda */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         
@@ -119,7 +163,7 @@ export const SociosView: React.FC<SociosViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
             <button
               onClick={() => setRolSel('todos')}
@@ -140,6 +184,16 @@ export const SociosView: React.FC<SociosViewProps> = ({
               Docentes
             </button>
           </div>
+
+          <button
+            onClick={handleSincronizarAlumnos}
+            disabled={sincronizando}
+            className="inline-flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs whitespace-nowrap transition-all disabled:opacity-50"
+            title="Importar padrón oficial de alumnos con chips desde asistencia.iaparamaestros.org"
+          >
+            {sincronizando ? <Loader2 size={15} className="animate-spin text-teal-600" /> : <RefreshCw size={15} className="text-teal-600" />}
+            <span>{sincronizando ? 'Sincronizando...' : 'Sincronizar Alumnos'}</span>
+          </button>
 
           <button
             onClick={abrirNuevoSocio}

@@ -13,14 +13,20 @@ import {
   Calendar,
   AlertCircle
 } from 'lucide-react';
-import { Prestamo, Libro, Socio, EstadoPrestamo } from '../types';
+import { Prestamo, Libro, Socio, EstadoPrestamo, Computadora } from '../types';
+import { ChipScannerBar } from './ChipScannerBar';
+import { ChipActionModal } from './ChipActionModal';
 
 interface PrestamosViewProps {
   prestamos: Prestamo[];
   libros: Libro[];
   socios: Socio[];
+  computadoras?: Computadora[];
+  escuelaId?: string;
   onCrearPrestamo: (nuevo: Omit<Prestamo, 'id' | 'codigoPrestamo'>) => void;
   onDevolverPrestamo: (id: string) => void;
+  onAsignarPC?: (pcId: string, socioId: string, socioNombre: string, minutos?: number) => void;
+  onLiberarPC?: (pcId: string) => void;
   libroSeleccionadoParaPrestar?: Libro | null;
   onLimpiarSeleccionLibro?: () => void;
 }
@@ -29,14 +35,19 @@ export const PrestamosView: React.FC<PrestamosViewProps> = ({
   prestamos,
   libros,
   socios,
+  computadoras = [],
+  escuelaId = 'esc-101',
   onCrearPrestamo,
   onDevolverPrestamo,
+  onAsignarPC,
+  onLiberarPC,
   libroSeleccionadoParaPrestar,
   onLimpiarSeleccionLibro
 }) => {
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoPrestamo>('todos');
   const [busqueda, setBusqueda] = useState('');
   const [modalAbierto, setModalAbierto] = useState(Boolean(libroSeleccionadoParaPrestar));
+  const [socioChipModal, setSocioChipModal] = useState<Socio | null>(null);
 
   // Form State
   const [libroIdSel, setLibroIdSel] = useState(libroSeleccionadoParaPrestar?.id || '');
@@ -85,6 +96,26 @@ export const PrestamosView: React.FC<PrestamosViewProps> = ({
     if (onLimpiarSeleccionLibro) onLimpiarSeleccionLibro();
   };
 
+  const handleCrearPrestamoRapido = (libroId: string, socio: Socio, dias: number = 7) => {
+    const libro = libros.find(l => l.id === libroId);
+    if (!libro) return;
+    const fechaHoy = new Date();
+    const fechaDev = new Date();
+    fechaDev.setDate(fechaHoy.getDate() + Number(dias));
+
+    onCrearPrestamo({
+      libroId: libro.id,
+      libroTitulo: libro.titulo,
+      socioId: socio.id,
+      socioNombre: socio.nombre,
+      socioMatricula: socio.matricula,
+      socioRol: socio.rol,
+      fechaPrestamo: fechaHoy.toISOString().split('T')[0],
+      fechaDevolucionEsperada: fechaDev.toISOString().split('T')[0],
+      estado: 'activo'
+    });
+  };
+
   // Filtrado de préstamos
   const prestamosFiltrados = useMemo(() => {
     return prestamos.filter(p => {
@@ -106,6 +137,13 @@ export const PrestamosView: React.FC<PrestamosViewProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Barra de Lectura de Chip NFC / RFID */}
+      <ChipScannerBar
+        escuelaId={escuelaId}
+        onSocioIdentificado={(s) => setSocioChipModal(s)}
+        sociosDisponibles={socios}
+      />
+
       {/* Tarjetas de Métricas Rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
@@ -424,6 +462,20 @@ export const PrestamosView: React.FC<PrestamosViewProps> = ({
           </div>
         </div>
       )}
+      {/* Modal de Acción Rápida con Chip Identificado */}
+      <ChipActionModal
+        abierto={Boolean(socioChipModal)}
+        onCerrar={() => setSocioChipModal(null)}
+        socio={socioChipModal}
+        prestamosDelSocio={socioChipModal ? prestamos.filter(p => p.socioId === socioChipModal.id) : []}
+        computadoraDelSocio={socioChipModal ? computadoras.find(c => c.socioIdActual === socioChipModal.id) || null : null}
+        computadorasDisponibles={computadoras.filter(c => c.estado === 'disponible')}
+        librosDisponibles={libros.filter(l => l.ejemplaresDisponibles > 0)}
+        onDevolverPrestamo={onDevolverPrestamo}
+        onAsignarPC={onAsignarPC || (() => {})}
+        onLiberarPC={onLiberarPC || (() => {})}
+        onCrearPrestamoRapido={handleCrearPrestamoRapido}
+      />
 
     </div>
   );

@@ -262,8 +262,12 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
             prestamos={prestamos}
             libros={libros}
             socios={socios}
+            computadoras={computadoras}
+            escuelaId={activeEscuelaId}
             onCrearPrestamo={handleCrearPrestamo}
             onDevolverPrestamo={handleDevolverPrestamo}
+            onAsignarPC={handleAsignarPC}
+            onLiberarPC={handleLiberarPC}
             libroSeleccionadoParaPrestar={libroPrestarSel}
             onLimpiarSeleccionLibro={() => setLibroPrestarSel(null)}
           />
@@ -273,17 +277,41 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
           <ComputadorasView
             computadoras={computadoras}
             socios={socios}
+            prestamos={prestamos}
+            libros={libros}
+            escuelaId={activeEscuelaId}
             onAsignarPC={handleAsignarPC}
             onLiberarPC={handleLiberarPC}
             onCambiarEstadoPC={handleCambiarEstadoPC}
+            onDevolverPrestamo={handleDevolverPrestamo}
+            onCrearPrestamoRapido={(libroId, socio, dias = 7) => {
+              const libro = libros.find(l => l.id === libroId);
+              if (!libro) return;
+              const fHoy = new Date();
+              const fDev = new Date();
+              fDev.setDate(fHoy.getDate() + dias);
+              handleCrearPrestamo({
+                libroId: libro.id,
+                libroTitulo: libro.titulo,
+                socioId: socio.id,
+                socioNombre: socio.nombre,
+                socioMatricula: socio.matricula,
+                socioRol: socio.rol,
+                fechaPrestamo: fHoy.toISOString().split('T')[0],
+                fechaDevolucionEsperada: fDev.toISOString().split('T')[0],
+                estado: 'activo'
+              });
+            }}
           />
         )}
 
         {tabActiva === 'socios' && (
           <SociosView
             socios={socios}
+            escuelaId={activeEscuelaId}
             onGuardarSocio={handleGuardarSocio}
             onEliminarSocio={handleEliminarSocio}
+            onRecargarSocios={cargarDatosTenant}
           />
         )}
 
@@ -293,8 +321,11 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
             prestamos={prestamos}
             socios={socios}
             computadoras={computadoras}
+            escuelaId={activeEscuelaId}
             onVolverAdmin={() => setTabActiva('catalogo')}
             onAsignarPC={handleAsignarPC}
+            onLiberarPC={handleLiberarPC}
+            onDevolverPrestamo={handleDevolverPrestamo}
           />
         )}
 
