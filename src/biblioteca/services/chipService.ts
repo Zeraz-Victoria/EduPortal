@@ -81,34 +81,100 @@ export function normalizarUid(raw: string): string {
   return String(raw).trim().replace(/[:\-\s\r\n\t]/g, '').toUpperCase();
 }
 
+/**
+ * Genera todas las variantes posibles de un UID de tarjeta:
+ * - Decimal de 10 dígitos (estándar de lectores USB comunes)
+ * - Decimal sin ceros iniciales
+ * - Hexadecimal estándar (Web NFC / teléfonos)
+ * - Hexadecimal con relleno de 8 caracteres
+ * - Orden de bytes invertido (Little Endian)
+ */
+export function getUidVariants(raw: string): string[] {
+  if (!raw) return [];
+  const clean = normalizarUid(raw);
+  if (!clean) return [];
+
+  const variants = new Set<string>([clean]);
+
+  // Si es un número decimal (ej. lector USB envía 0007647141 o 1103303753)
+  if (/^\d+$/.test(clean)) {
+    const num = parseInt(clean, 10);
+    if (!isNaN(num) && num > 0) {
+      variants.add(String(num));
+      variants.add(String(num).padStart(10, '0'));
+      
+      const hex = num.toString(16).toUpperCase();
+      variants.add(hex);
+      const paddedHex = hex.padStart(8, '0');
+      variants.add(paddedHex);
+
+      const rev = paddedHex.match(/../g)?.reverse().join('');
+      if (rev) {
+        variants.add(rev);
+        const numRev = parseInt(rev, 16);
+        if (!isNaN(numRev) && numRev > 0) {
+          variants.add(String(numRev));
+          variants.add(String(numRev).padStart(10, '0'));
+        }
+      }
+    }
+  }
+
+  // Si es hexadecimal (ej. 04A28F7C o A1B2C3D4)
+  if (/^[0-9A-F]+$/.test(clean) && clean.length >= 4) {
+    const num = parseInt(clean, 16);
+    if (!isNaN(num) && num > 0) {
+      variants.add(String(num));
+      variants.add(String(num).padStart(10, '0'));
+    }
+    if (clean.length % 2 === 0) {
+      const rev = clean.match(/../g)?.reverse().join('');
+      if (rev) {
+        variants.add(rev);
+        const numRev = parseInt(rev, 16);
+        if (!isNaN(numRev) && numRev > 0) {
+          variants.add(String(numRev));
+          variants.add(String(numRev).padStart(10, '0'));
+        }
+      }
+    }
+  }
+
+  return Array.from(variants);
+}
+
 export const chipService = {
   /**
    * Identifica un alumno o docente al pasar su tarjeta/chip
    * Busca en el padrón de socios/lectores de la escuela almacenado en EduPortal
+   * reconociendo lectores USB (10 dígitos decimales) y Web NFC (Hexadecimal)
    */
   identificarChip: async (
     rawUid: string, 
     institucionId?: string
-  ): Promise<{ encontrado: boolean; socio?: Socio; tipo?: 'alumno' | 'docente'; mensaje?: string }> => {
+  ): Promise<{ encontrado: boolean; socio?: Socio; tipo?: 'alumno' | 'docente'; cleanUid: string; mensaje?: string }> => {
     const clean = normalizarUid(rawUid);
     if (!clean) {
-      return { encontrado: false, mensaje: 'Código de chip vacío.' };
+      return { encontrado: false, cleanUid: '', mensaje: 'Código de chip vacío.' };
     }
 
     const escId = institucionId || 'esc-101';
     const sociosLocales = storageService.getSocios(escId);
+    const variants = getUidVariants(clean);
 
-    // 1. Verificación en Socios de la escuela activa
+    // 1. Verificación inteligente en Socios de la escuela activa
     const socioLocal = sociosLocales.find(s => {
-      const u = normalizarUid(s.nfcUid || '');
-      const m = normalizarUid(s.matricula || '');
-      return u === clean || m === clean || s.id === clean;
+      const uVariants = getUidVariants(s.nfcUid || '');
+      const mVariants = getUidVariants(s.matricula || '');
+      const sId = normalizarUid(s.id);
+      return variants.some(v => uVariants.includes(v) || mVariants.includes(v) || sId === v);
     });
 
     if (socioLocal) {
       reproducirSonido('exito');
       return {
         encontrado: true,
+        cleanUid: clean,
         socio: socioLocal,
         tipo: socioLocal.rol
       };
@@ -118,8 +184,29 @@ export const chipService = {
     reproducirSonido('error');
     return {
       encontrado: false,
-      mensaje: `Chip UID (${clean}) no registrado en Biblioteca. Regístralo o asígnalo en la sección 'Lectores / Socios'.`
+      cleanUid: clean,
+      mensaje: `Chip detectado (UID: ${clean}), pero aún no está asignado a ningún alumno en la biblioteca.`
     };
+  },
+
+  /**
+   * Vincula rápidamente un UID de chip escaneado a un alumno
+   */
+  asignarChipASocio: (socioId: string, rawUid: string, institucionId?: string): Socio | null => {
+    const clean = normalizarUid(rawUid);
+    if (!clean || !socioId) return null;
+    const escId = institucionId || 'esc-101';
+    const socios = storageService.getSocios(escId);
+    const socio = socios.find(s => s.id === socioId);
+    if (!socio) return null;
+
+    const actualizado: Socio = {
+      ...socio,
+      nfcUid: clean
+    };
+    storageService.saveSocio(actualizado, escId);
+    reproducirSonido('asignar');
+    return actualizado;
   },
 
   /**

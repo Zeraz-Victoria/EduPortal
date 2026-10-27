@@ -66,6 +66,12 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
   const [alumnoIdentificado, setAlumnoIdentificado] = useState<Socio | null>(null);
   const [prestamoExitosoInfo, setPrestamoExitosoInfo] = useState<{ libro: string; fechaDev: string; alumno: string } | null>(null);
 
+  // Estados para lectores físicos USB HID y vinculación inmediata
+  const [modalScanInput, setModalScanInput] = useState('');
+  const [chipNoRegistrado, setChipNoRegistrado] = useState<string | null>(null);
+  const [socioParaVincularId, setSocioParaVincularId] = useState<string>('');
+  const modalInputRef = useRef<HTMLInputElement>(null);
+
   const activeEscuelaId = escuelaActiva?.id || escuelaIdInicial || 'esc-101';
 
   // Reloj en tiempo real
@@ -75,6 +81,19 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Autofocus en el input del escáner al abrir cualquier modal
+  useEffect(() => {
+    if (modalPrestarLibro || modalReservarPC || modalLiberarPC) {
+      setChipNoRegistrado(null);
+      setModalScanInput('');
+      setSocioParaVincularId('');
+      const t = setTimeout(() => {
+        modalInputRef.current?.focus();
+      }, 70);
+      return () => clearTimeout(t);
+    }
+  }, [modalPrestarLibro, modalReservarPC, modalLiberarPC]);
 
   // Cargar datos y sincronizar escuela
   const cargarDatos = () => {
@@ -119,22 +138,26 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
   // PROCESAMIENTO CENTRAL DE CHIP NFC / RFID
   // -------------------------------------------------------------
   const procesarChip = async (rawUid: string) => {
-    if (!rawUid.trim()) return;
+    const clean = rawUid.trim();
+    if (!clean) return;
     setCargandoChip(true);
-    setMensajeChip({ texto: 'Validando chip escolar con el servidor...', tipo: 'info' });
+    setMensajeChip({ texto: `Leyendo tarjeta (UID: ${clean})...`, tipo: 'info' });
 
     try {
-      const res = await chipService.identificarChip(rawUid, activeEscuelaId);
+      const res = await chipService.identificarChip(clean, activeEscuelaId);
       
       if (!res.encontrado || !res.socio) {
         reproducirSonido('error');
+        const detectedUid = res.cleanUid || clean;
+        setChipNoRegistrado(detectedUid);
         setMensajeChip({ 
-          texto: res.mensaje || `Tarjeta con UID "${rawUid}" no registrada en el padrón escolar.`, 
+          texto: res.mensaje || `Tarjeta con UID "${detectedUid}" detectada pero no registrada.`, 
           tipo: 'error' 
         });
         return;
       }
 
+      setChipNoRegistrado(null);
       const alumno = res.socio;
       setAlumnoIdentificado(alumno);
 
@@ -225,18 +248,39 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     }
   };
 
+  // Vinculación instantánea de una tarjeta detectada a un alumno y ejecución de la acción pendiente
+  const handleVincularChipYContinuar = (uid: string, socioId: string) => {
+    if (!uid || !socioId) return;
+    const actualizado = chipService.asignarChipASocio(socioId, uid, activeEscuelaId);
+    if (actualizado) {
+      cargarDatos();
+      setChipNoRegistrado(null);
+      setModalScanInput('');
+      procesarChip(uid);
+    }
+  };
+
   // Listener global para lectores USB de tarjetas (teclado HID)
   useEffect(() => {
     let buffer = '';
     let ultimoTiempo = Date.now();
+    let debounceTimer: any = null;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Si el foco ya está en el input enfocado del modal o en un input de búsqueda, dejar que actúe su onChange/onKeyDown
+      if (e.target === modalInputRef.current) {
+        return;
+      }
+      if (e.target instanceof HTMLInputElement && e.target.id === 'input-buscar-libros') {
+        return;
+      }
+
       const ahora = Date.now();
       const delta = ahora - ultimoTiempo;
       ultimoTiempo = ahora;
 
       if (e.key === 'Enter') {
-        if (buffer.length >= 4) {
+        if (buffer.length >= 3) {
           e.preventDefault();
           const code = buffer;
           buffer = '';
@@ -244,10 +288,23 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         }
         buffer = '';
       } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (delta > 200 && buffer.length > 0) {
+        // Si hay una pausa larga entre teclas (> 800ms), reiniciar buffer
+        if (delta > 800 && buffer.length > 0) {
           buffer = '';
         }
         buffer += e.key;
+
+        // Auto-detección para lectores USB que transmiten a alta velocidad y no envían Enter
+        clearTimeout(debounceTimer);
+        if (buffer.length >= 7) {
+          debounceTimer = setTimeout(() => {
+            if (buffer.length >= 7) {
+              const code = buffer;
+              buffer = '';
+              procesarChip(code);
+            }
+          }, 250);
+        }
       }
     };
 
@@ -259,9 +316,10 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(debounceTimer);
       stopNfc();
     };
-  }, [activeEscuelaId, modalPrestarLibro, modalReservarPC, modalLiberarPC]);
+  }, [activeEscuelaId, modalPrestarLibro, modalReservarPC, modalLiberarPC, socios]);
 
   // Devolución directa de libro con chip
   const handleDevolverLibroDirecto = (prestamoId: string) => {
@@ -944,8 +1002,8 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
               <p className="text-xs text-slate-400">{modalPrestarLibro.autor} · {modalPrestarLibro.nivel}</p>
             </div>
 
-            {/* Animación de Espera de Chip */}
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3">
+            {/* Animación de Espera de Chip y Campo de Entrada USB */}
+            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3.5">
               <div className="relative w-12 h-12 mx-auto flex items-center justify-center text-teal-400">
                 <ScanLine size={32} className="animate-pulse" />
               </div>
@@ -954,8 +1012,70 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                 Pasa tu credencial por el lector para confirmar el préstamo de 7 días.
               </p>
 
-              {/* Selector de prueba rápida y campo de escáner en modal */}
-              <div className="pt-2 flex items-center justify-center gap-2 max-w-sm mx-auto">
+              {/* Input enfocado con autoFocus para capturar el lector USB al 100% */}
+              <div className="relative max-w-sm mx-auto">
+                <input
+                  ref={modalInputRef}
+                  type="text"
+                  autoFocus
+                  placeholder="Pasa tu tarjeta por el lector USB..."
+                  value={modalScanInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setModalScanInput(val);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (modalScanInput.trim().length >= 3) {
+                        procesarChip(modalScanInput.trim());
+                        setModalScanInput('');
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-slate-900 border-2 border-teal-500/80 focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 text-teal-300 font-mono text-center text-sm rounded-2xl placeholder:text-slate-500 shadow-inner"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-teal-400 text-xs font-bold pointer-events-none">
+                  <ScanLine size={16} className="animate-pulse" />
+                  <span>Listo</span>
+                </div>
+              </div>
+
+              {/* Si el chip fue leído por USB pero aún no está asignado a un alumno */}
+              {chipNoRegistrado && (
+                <div className="p-4 rounded-2xl bg-amber-950/70 border border-amber-600/80 text-left space-y-2.5 animate-in zoom-in-95">
+                  <div className="flex items-center gap-2 text-amber-300 font-black text-xs">
+                    <AlertCircle size={16} />
+                    <span>¡Tarjeta Detectada! UID: {chipNoRegistrado}</span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/90 leading-tight">
+                    Esta tarjeta fue detectada por el sensor pero aún no está asociada a ningún alumno en la biblioteca. Selecciona a qué alumno pertenece para vincularla y confirmar el préstamo ahora mismo:
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <select
+                      value={socioParaVincularId}
+                      onChange={(e) => setSocioParaVincularId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-slate-900 border border-amber-600/50 text-white text-xs font-bold rounded-xl"
+                    >
+                      <option value="">Selecciona al alumno...</option>
+                      {socios.map(s => (
+                        <option key={s.id} value={s.id}>{s.nombre} ({s.gradoGrupo})</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!socioParaVincularId}
+                      onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap"
+                    >
+                      Vincular y Prestar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Selector de prueba rápida */}
+              <div className="pt-1 flex items-center justify-center gap-2 max-w-sm mx-auto">
                 {socios.length > 0 && (
                   <select
                     onChange={(e) => {
@@ -964,9 +1084,9 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-2 bg-slate-800 border border-slate-700 text-teal-300 text-xs font-bold rounded-xl"
+                    className="px-3 py-1.5 bg-slate-800/80 border border-slate-700/80 text-slate-400 hover:text-teal-300 text-[11px] font-medium rounded-xl"
                   >
-                    <option value="" disabled>Pase de tarjeta de prueba...</option>
+                    <option value="" disabled>O seleccionar tarjeta de prueba...</option>
                     {socios.map(s => (
                       <option key={s.id} value={s.nfcUid || s.matricula}>
                         {s.nombre} ({s.gradoGrupo})
@@ -1031,13 +1151,68 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
               {modalReservarPC.modelo} · Tiempo de sesión: 60 minutos
             </p>
 
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3">
+            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3.5">
               <ScanLine size={28} className="mx-auto text-teal-400 animate-pulse" />
               <h4 className="text-xs font-black text-white">Acerca tu tarjeta escolar al lector</h4>
               <p className="text-[11px] text-slate-400">Para asignarte esta máquina de inmediato por 60 minutos.</p>
 
+              {/* Input enfocado con autoFocus para capturar el lector USB al 100% */}
+              <div className="relative max-w-sm mx-auto">
+                <input
+                  ref={modalInputRef}
+                  type="text"
+                  autoFocus
+                  placeholder="Pasa tu tarjeta por el lector USB..."
+                  value={modalScanInput}
+                  onChange={(e) => setModalScanInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (modalScanInput.trim().length >= 3) {
+                        procesarChip(modalScanInput.trim());
+                        setModalScanInput('');
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-slate-900 border-2 border-teal-500/80 focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 text-teal-300 font-mono text-center text-xs rounded-2xl placeholder:text-slate-500 shadow-inner"
+                />
+              </div>
+
+              {/* Si el chip fue leído por USB pero aún no está asignado a un alumno */}
+              {chipNoRegistrado && (
+                <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-600/80 text-left space-y-2 animate-in zoom-in-95">
+                  <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
+                    <AlertCircle size={15} />
+                    <span>Tarjeta Detectada (UID: {chipNoRegistrado})</span>
+                  </div>
+                  <p className="text-[10px] text-amber-200/90 leading-tight">
+                    Selecciona al alumno para asociar este chip y comenzar a usar la computadora:
+                  </p>
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <select
+                      value={socioParaVincularId}
+                      onChange={(e) => setSocioParaVincularId(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-slate-900 border border-amber-600/50 text-white text-xs font-bold rounded-xl"
+                    >
+                      <option value="">Selecciona al alumno...</option>
+                      {socios.map(s => (
+                        <option key={s.id} value={s.id}>{s.nombre} ({s.gradoGrupo})</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!socioParaVincularId}
+                      onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
+                      className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all"
+                    >
+                      Vincular y Usar Computadora
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {socios.length > 0 && (
-                <div className="pt-2 flex justify-center">
+                <div className="pt-1 flex justify-center">
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
@@ -1045,9 +1220,9 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-2 bg-slate-800 border border-slate-700 text-teal-300 text-xs font-bold rounded-xl max-w-xs"
+                    className="px-3 py-1.5 bg-slate-800/80 border border-slate-700/80 text-slate-400 hover:text-teal-300 text-[11px] font-medium rounded-xl max-w-xs"
                   >
-                    <option value="" disabled>Pase de tarjeta de prueba...</option>
+                    <option value="" disabled>O seleccionar tarjeta de prueba...</option>
                     {socios.map(s => (
                       <option key={s.id} value={s.nfcUid || s.matricula}>
                         {s.nombre} ({s.gradoGrupo})
