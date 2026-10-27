@@ -9,6 +9,7 @@ import { AsistenteIAView } from './components/AsistenteIAView';
 import { ReportesView } from './components/ReportesView';
 import { SuperAdminView } from './components/SuperAdminView';
 import { AuthModal } from './components/AuthModal';
+import { LoginScreen } from './components/LoginScreen';
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { Libro, Prestamo, Socio, Computadora, EstadisticasBiblioteca, UsuarioSaaS, EscuelaSaaS } from './types';
@@ -53,32 +54,23 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
     }, 3500);
   };
 
-  // 1. Inicializar sesión o cargar escuela por defecto
+  // 1. Inicializar sesión o exigir login
   useEffect(() => {
     const sesion = authService.getSesion();
     const todasEscuelas = storageService.getEscuelas();
     setEscuelas(todasEscuelas);
 
-    if (sesion) {
+    if (sesion && sesion.id !== 'usr-demo-01') {
       setUsuarioActivo(sesion);
       const esc = todasEscuelas.find(e => e.id === sesion.institucionId) || todasEscuelas[0];
       setEscuelaActiva(esc);
     } else {
-      // Cargar primera escuela como espacio predeterminado
-      const esc = todasEscuelas[0] || null;
-      setEscuelaActiva(esc);
-      const defaultUser: UsuarioSaaS = {
-        id: 'usr-demo-01',
-        usuario: 'carlos.mendoza@escuela.edu.mx',
-        email: 'carlos.mendoza@escuela.edu.mx',
-        nombreCompleto: 'Prof. Carlos Mendoza',
-        rol: 'director',
-        institucionId: esc ? esc.id : 'esc-101',
-        nombreEscuela: esc ? esc.nombre : 'Escuela Telesecundaria Cuauhtémoc',
-        esSuperAdmin: false
-      };
-      setUsuarioActivo(defaultUser);
-      authService.setSesion(defaultUser);
+      // Limpiar cualquier sesión demo residual
+      if (sesion?.id === 'usr-demo-01') {
+        authService.cerrarSesion();
+      }
+      setUsuarioActivo(null);
+      setEscuelaActiva(null);
     }
   }, []);
 
@@ -126,8 +118,8 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
   const handleCerrarSesion = () => {
     authService.cerrarSesion();
     setUsuarioActivo(null);
+    setEscuelaActiva(null);
     mostrarToast('Has cerrado sesión correctamente.');
-    setModalAuthAbierto(true);
   };
 
   // SuperAdmin: Switch Tenant (Administrar como escuela específica)
@@ -209,6 +201,34 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
     setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast('Socio eliminado.');
   };
+
+  // Si no hay usuario autenticado, exigir pantalla de Login / Registro / SuperAdmin
+  if (!usuarioActivo) {
+    return (
+      <div className="relative">
+        <LoginScreen
+          onLoginExitoso={handleLoginExitoso}
+          onVolverPortal={onBack}
+        />
+        {toastMensaje && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-800 text-xs font-bold animate-in slide-in-from-bottom-5">
+            {toastMensaje.tipo === 'exito' ? (
+              <CheckCircle className="text-emerald-400" size={16} />
+            ) : (
+              <AlertCircle className="text-rose-400" size={16} />
+            )}
+            <span>{toastMensaje.texto}</span>
+            <button 
+              onClick={() => setToastMensaje(null)} 
+              className="ml-2 text-slate-400 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-teal-500 selection:text-white">
