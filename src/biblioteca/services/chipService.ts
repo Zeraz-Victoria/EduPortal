@@ -162,7 +162,7 @@ export const chipService = {
     const sociosLocales = storageService.getSocios(escId);
     const variants = getUidVariants(clean);
 
-    // 1. Verificación inteligente en Socios de la escuela activa
+    // 1. Verificación en Socios locales de la escuela activa
     const socioLocal = sociosLocales.find(s => {
       const uVariants = getUidVariants(s.nfcUid || '');
       const mVariants = getUidVariants(s.matricula || '');
@@ -180,12 +180,52 @@ export const chipService = {
       };
     }
 
-    // 2. Si no está registrado en el padrón de la biblioteca
+    // 2. Consulta en vivo al sistema oficial de asistencia (asistencia.iaparamaestros.org)
+    // Permite identificar al instante a cualquier alumno ya registrado en la escuela
+    try {
+      const uidsToTry = [clean, ...variants.filter(v => v !== clean)];
+      for (const u of uidsToTry.slice(0, 3)) {
+        const res = await fetch(`${ASISTENCIA_BASE_URL}/api/portal/history/${encodeURIComponent(u)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.alumno && data.alumno.nombre_completo) {
+            const al = data.alumno;
+            const nuevoSocio: Socio = {
+              id: `asist-${al.id}`,
+              matricula: al.matricula || `ALU-${al.id}`,
+              nombre: al.nombre_completo,
+              rol: 'alumno',
+              gradoGrupo: al.grado ? `${al.grado} ${al.grupo || ''}`.trim() : (al.clase_id ? `Grupo #${al.clase_id}` : 'Alumno'),
+              email: `${al.id}@alumno.edu.mx`,
+              telefono: al.telefono_tutor || '',
+              nfcUid: clean,
+              prestamosActivos: 0,
+              fechaRegistro: new Date().toISOString().split('T')[0]
+            };
+
+            // Guardar automáticamente en el catálogo local de socios de la biblioteca
+            storageService.saveSocio(nuevoSocio, escId);
+            reproducirSonido('exito');
+
+            return {
+              encontrado: true,
+              cleanUid: clean,
+              socio: nuevoSocio,
+              tipo: 'alumno'
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('No se pudo conectar con el servidor de asistencia en vivo:', err);
+    }
+
+    // 3. Si no está registrado en el padrón de la escuela
     reproducirSonido('error');
     return {
       encontrado: false,
       cleanUid: clean,
-      mensaje: `Chip detectado (UID: ${clean}), pero aún no está asignado a ningún alumno en la biblioteca.`
+      mensaje: `Chip detectado (UID: ${clean}), pero aún no está asignado a ningún alumno en el sistema de asistencia.`
     };
   },
 
