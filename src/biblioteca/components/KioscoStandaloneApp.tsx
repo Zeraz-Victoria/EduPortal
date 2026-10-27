@@ -14,13 +14,14 @@ import {
   Maximize2, 
   Minimize2, 
   ArrowLeft, 
-  Layers, 
-  ExternalLink, 
-  HelpCircle,
-  ScanLine,
-  Loader2,
-  Calendar,
-  X
+  ScanLine, 
+  Loader2, 
+  X,
+  Radio,
+  Layers,
+  ChevronRight,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { Libro, Prestamo, Computadora, Socio, EscuelaSaaS } from '../types';
 import { storageService } from '../services/storageService';
@@ -46,27 +47,24 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
   const [computadoras, setComputadoras] = useState<Computadora[]>([]);
   const [socios, setSocios] = useState<Socio[]>([]);
 
-  // 3. Estado de navegación táctil del Kiosco
+  // 3. Navegación estilo Apple Segmented Control
   const [pestana, setPestana] = useState<'catalogo' | 'computo' | 'mis_prestamos'>('catalogo');
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
-  const [soloDisponibles, setSoloDisponibles] = useState(false);
   const [esPantallaCompleta, setEsPantallaCompleta] = useState(false);
   const [horaActual, setHoraActual] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
 
-  // 4. Modales interactivos de Chip
+  // 4. Modales de confirmación con Chip (Apple Pay style)
   const [modalPrestarLibro, setModalPrestarLibro] = useState<Libro | null>(null);
   const [modalReservarPC, setModalReservarPC] = useState<Computadora | null>(null);
   const [modalLiberarPC, setModalLiberarPC] = useState<Computadora | null>(null);
 
-  // 5. Estado de escaneo de tarjeta NFC / RFID
-  const [uidInput, setUidInput] = useState('');
+  // 5. Escaneo y vinculación de tarjetas USB / NFC
   const [cargandoChip, setCargandoChip] = useState(false);
-  const [mensajeChip, setMensajeChip] = useState<{ texto: string; tipo: 'exito' | 'error' | 'info' } | null>(null);
+  const [toastNotificacion, setToastNotificacion] = useState<{ texto: string; tipo: 'exito' | 'error' | 'info' } | null>(null);
   const [alumnoIdentificado, setAlumnoIdentificado] = useState<Socio | null>(null);
   const [prestamoExitosoInfo, setPrestamoExitosoInfo] = useState<{ libro: string; fechaDev: string; alumno: string } | null>(null);
 
-  // Estados para lectores físicos USB HID y vinculación inmediata
   const [modalScanInput, setModalScanInput] = useState('');
   const [chipNoRegistrado, setChipNoRegistrado] = useState<string | null>(null);
   const [socioParaVincularId, setSocioParaVincularId] = useState<string>('');
@@ -82,7 +80,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Autofocus en el input del escáner al abrir cualquier modal
+  // Autofocus en el campo del escáner al abrir cualquier modal
   useEffect(() => {
     if (modalPrestarLibro || modalReservarPC || modalLiberarPC) {
       setChipNoRegistrado(null);
@@ -114,8 +112,6 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
   useEffect(() => {
     cargarDatos();
-
-    // Sincronización en tiempo real con otras ventanas/pestañas de administración
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key && e.key.startsWith('eduportal_biblioteca')) {
         cargarDatos();
@@ -124,6 +120,14 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [escuelaIdInicial]);
+
+  // Toast temporal estilo Apple Capsule
+  const mostrarToast = (texto: string, tipo: 'exito' | 'error' | 'info' = 'info') => {
+    setToastNotificacion({ texto, tipo });
+    setTimeout(() => {
+      setToastNotificacion(null);
+    }, 4500);
+  };
 
   // Pantalla Completa
   const toggleFullscreen = () => {
@@ -141,7 +145,6 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     const clean = rawUid.trim();
     if (!clean) return;
     setCargandoChip(true);
-    setMensajeChip({ texto: `Leyendo tarjeta (UID: ${clean})...`, tipo: 'info' });
 
     try {
       const res = await chipService.identificarChip(clean, activeEscuelaId);
@@ -150,10 +153,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         reproducirSonido('error');
         const detectedUid = res.cleanUid || clean;
         setChipNoRegistrado(detectedUid);
-        setMensajeChip({ 
-          texto: res.mensaje || `Tarjeta con UID "${detectedUid}" detectada pero no registrada.`, 
-          tipo: 'error' 
-        });
+        mostrarToast(`Tarjeta detectada (UID: ${detectedUid}). Por favor selecciónate en la lista para asociarla.`, 'info');
         return;
       }
 
@@ -161,11 +161,11 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
       const alumno = res.socio;
       setAlumnoIdentificado(alumno);
 
-      // CASO A: Confirmar Préstamo de Libro con Chip
+      // CASO A: Préstamo de Libro
       if (modalPrestarLibro) {
         const fechaHoy = new Date();
         const fechaDev = new Date();
-        fechaDev.setDate(fechaHoy.getDate() + 7); // 7 días de préstamo por defecto en kiosco
+        fechaDev.setDate(fechaHoy.getDate() + 7);
         const fechaDevStr = fechaDev.toISOString().split('T')[0];
 
         const nuevoPrestamo = {
@@ -178,7 +178,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
           fechaPrestamo: fechaHoy.toISOString().split('T')[0],
           fechaDevolucionEsperada: fechaDevStr,
           estado: 'activo' as const,
-          notas: 'Solicitado directamente desde Kiosco de Autoservicio con Chip NFC'
+          notas: 'Préstamo autoservicio Kiosco con Chip NFC'
         };
 
         const resPrestamo = storageService.createPrestamo(nuevoPrestamo, activeEscuelaId);
@@ -193,11 +193,11 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
           alumno: alumno.nombre
         });
         setModalPrestarLibro(null);
-        setUidInput('');
+        setModalScanInput('');
         return;
       }
 
-      // CASO B: Reservar Computadora con Chip
+      // CASO B: Reservar Computadora
       if (modalReservarPC) {
         const updated = storageService.asignarComputadora(
           modalReservarPC.id, 
@@ -208,47 +208,37 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         );
         setComputadoras(updated);
         reproducirSonido('asignar');
-        setMensajeChip({
-          texto: `¡Estación "${modalReservarPC.nombre}" asignada con éxito a ${alumno.nombre} por 60 minutos!`,
-          tipo: 'exito'
-        });
+        mostrarToast(`¡${modalReservarPC.nombre} asignada a ${alumno.nombre} por 60 min!`, 'exito');
         setModalReservarPC(null);
-        setUidInput('');
+        setModalScanInput('');
         return;
       }
 
-      // CASO C: Liberar Computadora con Chip
+      // CASO C: Liberar Computadora
       if (modalLiberarPC) {
         const updated = storageService.liberarComputadora(modalLiberarPC.id, activeEscuelaId);
         setComputadoras(updated);
         reproducirSonido('devolver');
-        setMensajeChip({
-          texto: `¡Estación "${modalLiberarPC.nombre}" liberada correctamente! Gracias por usar el centro de cómputo.`,
-          tipo: 'exito'
-        });
+        mostrarToast(`¡${modalLiberarPC.nombre} liberada exitosamente!`, 'exito');
         setModalLiberarPC(null);
-        setUidInput('');
+        setModalScanInput('');
         return;
       }
 
-      // CASO D: Pase de tarjeta general en el Kiosco (abrir Mis Préstamos y Devoluciones)
+      // CASO D: Pase de tarjeta en pantalla principal -> abre Mis Préstamos
       setPestana('mis_prestamos');
       reproducirSonido('exito');
-      setMensajeChip({
-        texto: `¡Hola, ${alumno.nombre} (${alumno.gradoGrupo})! Mostrando tu estatus y libros pendientes.`,
-        tipo: 'exito'
-      });
-      setUidInput('');
+      mostrarToast(`¡Hola, ${alumno.nombre.split(' ')[0]}! Aquí están tus préstamos vigentes.`, 'exito');
 
     } catch (e: any) {
       reproducirSonido('error');
-      setMensajeChip({ texto: 'Error al comunicarse con la base de datos de asistencia.', tipo: 'error' });
+      mostrarToast('Error al procesar tarjeta.', 'error');
     } finally {
       setCargandoChip(false);
     }
   };
 
-  // Vinculación instantánea de una tarjeta detectada a un alumno y ejecución de la acción pendiente
+  // Vinculación instantánea de una tarjeta detectada a un alumno
   const handleVincularChipYContinuar = (uid: string, socioId: string) => {
     if (!uid || !socioId) return;
     const actualizado = chipService.asignarChipASocio(socioId, uid, activeEscuelaId);
@@ -267,11 +257,11 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     let debounceTimer: any = null;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Si el foco ya está en el input enfocado del modal o en un input de búsqueda, dejar que actúe su onChange/onKeyDown
+      // Si el foco ya está en el input enfocado del modal o en la barra de búsqueda, respetar su flujo
       if (e.target === modalInputRef.current) {
         return;
       }
-      if (e.target instanceof HTMLInputElement && e.target.id === 'input-buscar-libros') {
+      if (e.target instanceof HTMLInputElement && e.target.id === 'apple-kiosco-search') {
         return;
       }
 
@@ -288,13 +278,12 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         }
         buffer = '';
       } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // Si hay una pausa larga entre teclas (> 800ms), reiniciar buffer
         if (delta > 800 && buffer.length > 0) {
           buffer = '';
         }
         buffer += e.key;
 
-        // Auto-detección para lectores USB que transmiten a alta velocidad y no envían Enter
+        // Auto-detección para lectores USB que no envían Enter al final
         clearTimeout(debounceTimer);
         if (buffer.length >= 7) {
           debounceTimer = setTimeout(() => {
@@ -303,14 +292,14 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
               buffer = '';
               procesarChip(code);
             }
-          }, 250);
+          }, 260);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
-    // Activar antena Web NFC en celulares Android si aplica
+    // Soporte Web NFC
     let stopNfc = () => {};
     chipService.iniciarLecturaWebNFC((uid) => procesarChip(uid)).then(fn => { stopNfc = fn; });
 
@@ -321,121 +310,144 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
     };
   }, [activeEscuelaId, modalPrestarLibro, modalReservarPC, modalLiberarPC, socios]);
 
-  // Devolución directa de libro con chip
+  // Devolución directa de libro
   const handleDevolverLibroDirecto = (prestamoId: string) => {
     reproducirSonido('devolver');
     const res = storageService.devolverPrestamo(prestamoId, activeEscuelaId);
     setPrestamos(res.prestamos);
     setLibros(res.libros);
     setSocios(res.socios);
-    setMensajeChip({
-      texto: '¡Libro devuelto con éxito! Se ha reincorporado al estante de la biblioteca.',
-      tipo: 'exito'
-    });
+    mostrarToast('¡Libro devuelto con éxito! Se reincorporó al catálogo.', 'exito');
   };
 
-  // Filtrado exhaustivo de catálogo (título, autor, editorial, código, descripción)
+  // Filtrado de catálogo
   const librosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return libros.filter(l => {
-      // 1. Filtro por categoría
       if (categoriaFiltro !== 'todos' && l.categoria !== categoriaFiltro) {
         return false;
       }
-
-      // 2. Filtro solo disponibles
-      if (soloDisponibles && l.ejemplaresDisponibles <= 0) {
-        return false;
-      }
-
-      // 3. Filtro de búsqueda textual
       if (!q) return true;
-
-      const coincideTitulo = l.titulo.toLowerCase().includes(q);
-      const coincideAutor = l.autor.toLowerCase().includes(q);
-      const coincideEditorial = l.editorial ? l.editorial.toLowerCase().includes(q) : false;
-      const coincideCodigo = l.codigo.toLowerCase().includes(q);
-      const coincideDescripcion = l.descripcion.toLowerCase().includes(q);
-      const coincideTemas = l.temasClave.some(t => t.toLowerCase().includes(q));
-
-      return coincideTitulo || coincideAutor || coincideEditorial || coincideCodigo || coincideDescripcion || coincideTemas;
+      const matchTitulo = l.titulo.toLowerCase().includes(q);
+      const matchAutor = l.autor.toLowerCase().includes(q);
+      const matchEditorial = l.editorial ? l.editorial.toLowerCase().includes(q) : false;
+      const matchCodigo = l.codigo.toLowerCase().includes(q);
+      const matchDescripcion = l.descripcion.toLowerCase().includes(q);
+      return matchTitulo || matchAutor || matchEditorial || matchCodigo || matchDescripcion;
     });
-  }, [libros, busqueda, categoriaFiltro, soloDisponibles]);
+  }, [libros, busqueda, categoriaFiltro]);
 
-  // Categorías presentes
   const categorias = [
     'todos',
     'Libros de Texto SEP / NEM',
     'Ficción y Novela',
     'Ciencia y Tecnología',
     'Historia y Geografía',
-    'Lenguajes y Literatura',
-    'Saberes y Pensamiento Científico',
-    'Ética, Naturaleza y Sociedades',
-    'De lo Humano y lo Comunitario'
+    'Lenguajes y Literatura'
   ];
 
-  // Libros del alumno actualmente consultado
   const librosDelAlumno = useMemo(() => {
     if (!alumnoIdentificado) return [];
     return prestamos.filter(p => p.socioId === alumnoIdentificado.id && p.estado !== 'devuelto');
   }, [prestamos, alumnoIdentificado]);
 
-  const pcDelAlumno = useMemo(() => {
-    if (!alumnoIdentificado) return null;
-    return computadoras.find(c => c.socioIdActual === alumnoIdentificado.id) || null;
-  }, [computadoras, alumnoIdentificado]);
-
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans flex flex-col justify-between selection:bg-teal-500 selection:text-white">
+    <div className="min-h-screen bg-[#070709] text-[#F5F5F7] font-sans antialiased selection:bg-teal-500 selection:text-white flex flex-col justify-between relative overflow-x-hidden">
       
-      {/* 1. BARRA SUPERIOR DEL KIOSCO */}
-      <header className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 sm:px-8 py-3.5">
+      {/* Luz ambiental sutil (Apple Ambient Glow) */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-teal-500/10 via-emerald-500/5 to-transparent blur-[120px] pointer-events-none -z-10" />
+
+      {/* 1. BARRA SUPERIOR APPLE GLASSMORPHISM */}
+      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-[#070709]/75 border-b border-white/[0.08] px-4 sm:px-8 py-3.5 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
+          {/* Logo Apple Squircle & Título */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 via-emerald-400 to-teal-300 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-teal-500/25">
-              <Sparkles size={22} className="stroke-[2.5]" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-white/[0.12] to-white/[0.02] border border-white/[0.15] flex items-center justify-center text-teal-400 shadow-md">
+              <Sparkles size={20} className="stroke-[2.2]" />
             </div>
-
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-black tracking-tight text-white leading-none">
-                  Kiosco<span className="text-teal-400">Escolar</span>
-                </h1>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                  Autoservicio con Chip
+                <span className="text-base sm:text-lg font-black tracking-tight text-white leading-none">
+                  Kiosco<span className="text-teal-400 font-normal">Escolar</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Sensor Listo
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium truncate max-w-[220px] sm:max-w-md mt-0.5">
-                {escuelaActiva ? escuelaActiva.nombre : 'Biblioteca Escolar Digital'}
+              <p className="text-[11px] text-white/40 font-medium truncate max-w-[200px] sm:max-w-xs mt-0.5">
+                {escuelaActiva ? escuelaActiva.nombre : 'Biblioteca Cloud'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Reloj Digital */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-teal-400">
-              <Clock size={14} />
+          {/* Selector Central: Apple Segmented Pill Control */}
+          <nav className="flex items-center p-1 rounded-full bg-white/[0.06] border border-white/[0.08] backdrop-blur-xl shadow-inner">
+            <button
+              onClick={() => setPestana('catalogo')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                pestana === 'catalogo'
+                  ? 'bg-white text-black shadow-sm scale-[1.02]'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <BookOpen size={14} />
+              <span>Libros</span>
+            </button>
+
+            <button
+              onClick={() => setPestana('computo')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                pestana === 'computo'
+                  ? 'bg-white text-black shadow-sm scale-[1.02]'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Laptop size={14} />
+              <span>Cómputo</span>
+            </button>
+
+            <button
+              onClick={() => setPestana('mis_prestamos')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                pestana === 'mis_prestamos'
+                  ? 'bg-white text-black shadow-sm scale-[1.02]'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <User size={14} />
+              <span>Mis Préstamos</span>
+              {librosDelAlumno.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-teal-500 text-black text-[10px] font-black flex items-center justify-center">
+                  {librosDelAlumno.length}
+                </span>
+              )}
+            </button>
+          </nav>
+
+          {/* Herramientas de Ventana */}
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-white/60">
+              <Clock size={13} />
               <span>{horaActual}</span>
             </div>
 
-            {/* Pantalla Completa */}
             <button
               onClick={toggleFullscreen}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-              title={esPantallaCompleta ? 'Salir de pantalla completa' : 'Modo Pantalla Completa para Kiosco'}
+              className="p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.08] text-white/70 hover:text-white transition-colors"
+              title={esPantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla Completa'}
             >
-              {esPantallaCompleta ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {esPantallaCompleta ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
             </button>
 
             {onSalir && (
               <button
                 onClick={onSalir}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-medium text-white/80 hover:text-white transition-all"
               >
-                <ArrowLeft size={14} />
-                <span>Administración</span>
+                <ArrowLeft size={13} />
+                <span className="hidden sm:inline">Cerrar Kiosco</span>
               </button>
             )}
           </div>
@@ -443,211 +455,72 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         </div>
       </header>
 
-      {/* 2. BARRA DINÁMICA DE LECTURA DE CHIP NFC / RFID */}
-      <div className="bg-gradient-to-r from-teal-900/60 via-slate-900 to-emerald-900/60 border-b border-teal-800/40 px-4 sm:px-8 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/40">
-              <ScanLine size={18} className="animate-pulse" />
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-            </div>
-            <div className="text-xs">
-              <span className="font-black text-teal-300 block">Lector de Chip Escolar Listo</span>
-              <span className="text-[11px] text-slate-400">
-                Acerca tu tarjeta/llavero en cualquier momento para pedir libros, usar computadoras o devolver.
-              </span>
-            </div>
+      {/* Dynamic Toast estilo Apple Capsule */}
+      {toastNotificacion && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-200">
+          <div className={`px-5 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2.5 backdrop-blur-2xl border shadow-2xl ${
+            toastNotificacion.tipo === 'exito'
+              ? 'bg-[#1C2C24]/90 text-emerald-300 border-emerald-500/30'
+              : toastNotificacion.tipo === 'error'
+              ? 'bg-[#2C1C1C]/90 text-rose-300 border-rose-500/30'
+              : 'bg-[#1C1C1E]/90 text-white/90 border-white/20'
+          }`}>
+            {toastNotificacion.tipo === 'exito' ? <CheckCircle2 size={15} className="text-emerald-400" /> : <AlertCircle size={15} className="text-amber-400" />}
+            <span>{toastNotificacion.texto}</span>
           </div>
-
-          {/* Formulario rápido y simulación */}
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-            <form onSubmit={(e) => { e.preventDefault(); procesarChip(uidInput); }} className="relative flex-1 md:w-64">
-              <input
-                type="text"
-                value={uidInput}
-                onChange={(e) => setUidInput(e.target.value)}
-                placeholder="UID de tarjeta o código..."
-                className="w-full pl-3 pr-16 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700 text-xs font-mono text-white placeholder-slate-500 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-              />
-              <button
-                type="submit"
-                disabled={cargandoChip || !uidInput.trim()}
-                className="absolute right-1 top-1 bottom-1 px-2.5 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-              >
-                {cargandoChip ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
-                <span>Validar</span>
-              </button>
-            </form>
-
-            {socios.length > 0 && (
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    procesarChip(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                defaultValue=""
-                className="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs max-w-[130px] truncate"
-                title="Simular pase de tarjeta de un alumno registrado"
-              >
-                <option value="" disabled>Simular chip...</option>
-                {socios.slice(0, 6).map(s => (
-                  <option key={s.id} value={s.nfcUid || s.matricula}>
-                    {s.nombre.split(' ')[0]} ({s.gradoGrupo.split(' ')[0]})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
         </div>
+      )}
 
-        {/* Notificación de Estado */}
-        {mensajeChip && (
-          <div className="max-w-7xl mx-auto mt-2">
-            <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in ${
-              mensajeChip.tipo === 'exito' ? 'bg-emerald-950/90 text-emerald-200 border border-emerald-700/60' :
-              mensajeChip.tipo === 'error' ? 'bg-rose-950/90 text-rose-200 border border-rose-700/60' :
-              'bg-teal-950/90 text-teal-200 border border-teal-700/60'
-            }`}>
-              <div className="flex items-center gap-2">
-                {mensajeChip.tipo === 'exito' ? (
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                ) : mensajeChip.tipo === 'error' ? (
-                  <AlertCircle size={16} className="text-rose-400 shrink-0" />
-                ) : (
-                  <Loader2 size={16} className="animate-spin text-teal-400 shrink-0" />
-                )}
-                <span>{mensajeChip.texto}</span>
-              </div>
-              <button onClick={() => setMensajeChip(null)} className="text-slate-400 hover:text-white">
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 flex-1 w-full">
 
-      {/* 3. PESTAÑAS DE NAVEGACIÓN PRINCIPAL DEL KIOSCO */}
-      <div className="bg-slate-950 border-b border-slate-800 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 py-3 overflow-x-auto no-scrollbar">
-          
-          <button
-            onClick={() => setPestana('catalogo')}
-            className={`px-5 py-3 rounded-2xl flex items-center gap-2.5 text-sm font-black transition-all ${
-              pestana === 'catalogo' 
-                ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-500/25 scale-[1.02]' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <BookOpen size={18} />
-            <span>Buscar & Pedir Libros</span>
-            <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-black/25">
-              {libros.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setPestana('computo')}
-            className={`px-5 py-3 rounded-2xl flex items-center gap-2.5 text-sm font-black transition-all ${
-              pestana === 'computo' 
-                ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-500/25 scale-[1.02]' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Laptop size={18} />
-            <span>Centro de Cómputo</span>
-            <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-black/25">
-              {computadoras.filter(c => c.estado === 'disponible').length} Libres
-            </span>
-          </button>
-
-          <button
-            onClick={() => setPestana('mis_prestamos')}
-            className={`px-5 py-3 rounded-2xl flex items-center gap-2.5 text-sm font-black transition-all ${
-              pestana === 'mis_prestamos' 
-                ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-500/25 scale-[1.02]' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <RotateCcw size={18} />
-            <span>Mis Préstamos & Devolución con Chip</span>
-            {alumnoIdentificado && (
-              <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-black/25">
-                {librosDelAlumno.length}
-              </span>
-            )}
-          </button>
-
-        </div>
-      </div>
-
-      {/* 4. CONTENIDO PRINCIPAL POR PESTAÑA */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 flex-1">
-        
-        {/* ======================================================== */}
-        {/* PESTAÑA A: BÚSQUEDA Y PRÉSTAMO DE LIBROS CON CHIP         */}
-        {/* ======================================================== */}
+        {/* ------------------------------------------------------------- */}
+        {/* PESTAÑA A: CATÁLOGO DE LIBROS */}
+        {/* ------------------------------------------------------------- */}
         {pestana === 'catalogo' && (
-          <div className="space-y-6">
+          <div className="space-y-8 animate-in fade-in duration-200">
             
-            {/* Buscador Exhaustivo */}
-            <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+            {/* Barra de Búsqueda Apple Search Capsule */}
+            <div className="max-w-2xl mx-auto space-y-4">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" size={24} />
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                 <input
                   type="text"
+                  id="apple-kiosco-search"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Buscar por TÍTULO, AUTOR, EDITORIAL, DESCRIPCIÓN o CÓDIGO del libro..."
-                  className="w-full pl-13 pr-10 py-4 bg-slate-900/90 rounded-2xl border-2 border-slate-700 text-white placeholder-slate-500 font-bold text-base focus:border-teal-400 focus:outline-none transition-all shadow-inner"
+                  placeholder="Buscar por título, autor, materia o código..."
+                  className="w-full pl-11 pr-10 py-3.5 rounded-full bg-white/[0.05] border border-white/[0.1] focus:border-teal-400/80 focus:bg-white/[0.08] text-sm text-white placeholder:text-white/40 backdrop-blur-xl transition-all outline-none shadow-sm"
                 />
                 {busqueda && (
                   <button 
                     onClick={() => setBusqueda('')} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1"
                   >
-                    <X size={20} />
+                    <X size={15} />
                   </button>
                 )}
               </div>
 
-              {/* Filtros de Categoría y Disponibilidad */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-                  {categorias.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setCategoriaFiltro(cat)}
-                      className={`px-3 py-1.5 rounded-xl transition-all capitalize ${
-                        categoriaFiltro === cat 
-                          ? 'bg-teal-500 text-slate-950 font-black shadow-xs' 
-                          : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      {cat === 'todos' ? 'Todos los Libros' : cat}
-                    </button>
-                  ))}
-                </div>
-
-                <label className="flex items-center gap-2 text-xs font-bold text-teal-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={soloDisponibles}
-                    onChange={(e) => setSoloDisponibles(e.target.checked)}
-                    className="w-4 h-4 rounded text-teal-500 focus:ring-0 bg-slate-900 border-slate-700"
-                  />
-                  <span>Solo ejemplares disponibles para préstamo</span>
-                </label>
+              {/* Cápsulas de Categorías estilo Apple Music */}
+              <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+                {categorias.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoriaFiltro(cat)}
+                    className={`px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap ${
+                      categoriaFiltro === cat
+                        ? 'bg-white text-black font-semibold shadow-sm scale-[1.02]'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-white/60 border border-white/[0.06]'
+                    }`}
+                  >
+                    {cat === 'todos' ? 'Todos' : cat}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Grid de Libros */}
+            {/* Grid de Libros Apple Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {librosFiltrados.map((libro) => {
                 const disponible = libro.ejemplaresDisponibles > 0;
@@ -655,81 +528,69 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                 return (
                   <div
                     key={libro.id}
-                    className="bg-slate-950 rounded-3xl p-6 border border-slate-800 hover:border-teal-500/50 transition-all duration-200 flex flex-col justify-between group shadow-lg"
+                    className="group rounded-3xl p-6 bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.08] hover:border-white/[0.16] transition-all duration-200 flex flex-col justify-between shadow-xl relative overflow-hidden"
                   >
                     <div className="space-y-3">
                       
-                      {/* Tags Superiores */}
+                      {/* Metadatos superiores */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-teal-950 text-teal-300 border border-teal-800/50 truncate max-w-[65%]">
+                        <span className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 rounded-full bg-white/[0.05] text-white/60 border border-white/[0.08] truncate max-w-[60%]">
                           {libro.categoria}
                         </span>
                         
-                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
-                          disponible ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
+                          disponible 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                         }`}>
-                          {disponible ? `${libro.ejemplaresDisponibles} en estante` : 'Agotado temporal'}
+                          <span className={`w-1.5 h-1.5 rounded-full ${disponible ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                          {disponible ? `${libro.ejemplaresDisponibles} disponible${libro.ejemplaresDisponibles > 1 ? 's' : ''}` : 'Agotado'}
                         </span>
                       </div>
 
                       {/* Título & Autor */}
                       <div>
-                        <h3 className="text-lg font-black text-white group-hover:text-teal-300 transition-colors leading-snug">
+                        <h3 className="text-base font-bold text-white group-hover:text-teal-300 transition-colors leading-snug">
                           {libro.titulo}
                         </h3>
-                        <p className="text-xs font-bold text-slate-400 mt-1">
+                        <p className="text-xs text-white/50 font-medium mt-1">
                           {libro.autor} {libro.editorial ? `· ${libro.editorial}` : ''}
                         </p>
                       </div>
 
-                      {/* Sinopsis / Descripción */}
-                      <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                      {/* Sinopsis */}
+                      <p className="text-xs text-white/40 line-clamp-2 leading-relaxed">
                         {libro.descripcion}
                       </p>
 
                       {/* Ubicación y Código */}
-                      <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                        <span>Código: <strong className="text-slate-300">{libro.codigo}</strong></span>
-                        <span>Ubicación: <strong className="text-teal-400">{libro.ubicacionEstante || 'Estante Central'}</strong></span>
+                      <div className="pt-2 flex items-center justify-between text-[11px] text-white/30 font-mono">
+                        <span>Código: {libro.codigo}</span>
+                        <span className="text-white/60">{libro.ubicacionEstante || 'Estante Principal'}</span>
                       </div>
 
                     </div>
 
-                    {/* Botón Táctil de Préstamo con Chip */}
-                    <div className="pt-5 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+                    {/* Botón Acción Apple Pill */}
+                    <div className="pt-5 mt-4 border-t border-white/[0.06]">
                       {disponible ? (
                         <button
                           onClick={() => {
                             setModalPrestarLibro(libro);
-                            setMensajeChip({
-                              texto: `Por favor acerca tu tarjeta o chip para confirmar el préstamo de "${libro.titulo}".`,
-                              tipo: 'info'
-                            });
+                            setChipNoRegistrado(null);
                           }}
-                          className="flex-1 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs rounded-2xl shadow-md shadow-teal-500/20 transition-all flex items-center justify-center gap-2 group-hover:scale-[1.02]"
+                          className="w-full py-2.5 rounded-full bg-white hover:bg-teal-400 text-black font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.01]"
                         >
-                          <CreditCard size={16} />
-                          <span>Pedir prestado con mi Chip</span>
+                          <Zap size={14} className="fill-black stroke-black" />
+                          <span>Pedir con mi Tarjeta</span>
                         </button>
                       ) : (
                         <button
                           disabled
-                          className="flex-1 py-3 bg-slate-900 text-slate-600 font-bold text-xs rounded-2xl cursor-not-allowed"
+                          className="w-full py-2.5 rounded-full bg-white/[0.04] text-white/30 font-medium text-xs border border-white/[0.06] cursor-not-allowed"
                         >
-                          Sin ejemplares disponibles
+                          Agotado temporalmente
                         </button>
-                      )}
-
-                      {libro.enlaceLecturaDigital && (
-                        <a
-                          href={libro.enlaceLecturaDigital}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-3 bg-slate-900 hover:bg-slate-800 text-teal-400 rounded-2xl transition-colors"
-                          title="Leer versión oficial en línea"
-                        >
-                          <ExternalLink size={16} />
-                        </a>
                       )}
                     </div>
 
@@ -739,118 +600,98 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             </div>
 
             {librosFiltrados.length === 0 && (
-              <div className="p-12 text-center bg-slate-950 rounded-3xl border border-slate-800 space-y-3">
-                <BookOpen size={36} className="mx-auto text-slate-600" />
-                <h4 className="text-lg font-black text-white">No se encontraron libros con ese criterio</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Prueba buscando otra palabra clave, autor o borra los filtros de categoría para ver todos los ejemplares.
+              <div className="text-center py-16 space-y-3">
+                <BookOpen size={40} className="mx-auto text-white/20" />
+                <h4 className="text-base font-bold text-white">No se encontraron libros</h4>
+                <p className="text-xs text-white/40 max-w-sm mx-auto">
+                  Prueba buscando con otra palabra o selecciona otra categoría arriba.
                 </p>
-                <button
-                  onClick={() => { setBusqueda(''); setCategoriaFiltro('todos'); setSoloDisponibles(false); }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all"
-                >
-                  Restablecer Búsqueda
-                </button>
               </div>
             )}
 
           </div>
         )}
 
-        {/* ======================================================== */}
-        {/* PESTAÑA B: CENTRO DE CÓMPUTO & RESERVA CON CHIP           */}
-        {/* ======================================================== */}
+        {/* ------------------------------------------------------------- */}
+        {/* PESTAÑA B: CENTRO DE CÓMPUTO */}
+        {/* ------------------------------------------------------------- */}
         {pestana === 'computo' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-200">
             
-            <div className="bg-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-black text-white">Centro de Cómputo e Investigación</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-xl">
-                  Acerca tu tarjeta escolar para reservar una computadora libre durante 60 minutos para proyectos escolares. Al terminar, vuelve a pasar tu chip para liberarla.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <div className="px-3.5 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-emerald-300">
-                  {computadoras.filter(c => c.estado === 'disponible').length} Libres
-                </div>
-                <div className="px-3.5 py-2 rounded-xl bg-teal-950 border border-teal-800 text-teal-300">
-                  {computadoras.filter(c => c.estado === 'en_uso').length} En Uso
-                </div>
-              </div>
+            <div className="text-center max-w-lg mx-auto space-y-1">
+              <h2 className="text-xl font-bold tracking-tight text-white">Centro de Cómputo</h2>
+              <p className="text-xs text-white/50">
+                Selecciona una estación libre y pasa tu tarjeta escolar para activarla por 60 minutos.
+              </p>
             </div>
 
-            {/* Grid de Computadoras */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* Grid de Computadoras estilo Apple Hardware */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {computadoras.map((pc) => {
-                const libre = pc.estado === 'disponible';
-                const enUso = pc.estado === 'en_uso';
+                const disponible = pc.estado === 'disponible';
 
                 return (
                   <div
                     key={pc.id}
-                    className={`rounded-3xl p-6 border transition-all duration-200 flex flex-col justify-between ${
-                      libre ? 'bg-slate-950 border-slate-800 hover:border-emerald-500/50' :
-                      enUso ? 'bg-teal-950/20 border-teal-800/60' :
-                      'bg-slate-950 border-slate-800 opacity-60'
+                    className={`rounded-3xl p-6 border transition-all duration-200 flex flex-col justify-between shadow-xl ${
+                      disponible 
+                        ? 'bg-white/[0.03] hover:bg-white/[0.05] border-white/[0.08]' 
+                        : 'bg-amber-950/20 border-amber-500/20'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
+                    <div className="space-y-3">
+                      
+                      <div className="flex items-center justify-between">
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                          libre ? 'bg-emerald-500/20 text-emerald-400' : 'bg-teal-500/20 text-teal-300'
+                          disponible ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
                           <Laptop size={20} />
                         </div>
 
-                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
-                          libre ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-teal-950 text-teal-300 border border-teal-800'
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
+                          disponible 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
-                          {libre ? 'Disponible' : 'Ocupada'}
+                          <span className={`w-1.5 h-1.5 rounded-full ${disponible ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                          {disponible ? 'Disponible' : 'En Uso'}
                         </span>
                       </div>
 
-                      <h4 className="text-lg font-black text-white">{pc.nombre}</h4>
-                      <p className="text-xs text-slate-400">{pc.modelo} · {pc.sistemaOperativo}</p>
+                      <div>
+                        <h4 className="text-base font-bold text-white">{pc.nombre}</h4>
+                        <p className="text-xs text-white/40">{pc.modelo}</p>
+                      </div>
 
-                      {enUso && (
-                        <div className="mt-3 p-3 bg-teal-950/40 rounded-xl border border-teal-800/40 text-xs">
-                          <span className="text-[11px] text-teal-400 block font-bold">En sesión:</span>
-                          <span className="font-bold text-white">{pc.socioNombreActual || 'Alumno'}</span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">Tiempo asignado: 60 min</span>
+                      {!disponible && pc.socioNombreActual && (
+                        <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-xs space-y-1">
+                          <span className="text-white/40 block text-[10px] uppercase font-semibold">Usuario Activo:</span>
+                          <span className="font-semibold text-white truncate block">{pc.socioNombreActual}</span>
+                          <div className="flex items-center gap-1 text-[11px] text-amber-400 pt-1">
+                            <Clock size={12} />
+                            <span>Sesión en curso</span>
+                          </div>
                         </div>
                       )}
+
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-800">
-                      {libre ? (
+                    <div className="pt-5 mt-4 border-t border-white/[0.06]">
+                      {disponible ? (
                         <button
-                          onClick={() => {
-                            setModalReservarPC(pc);
-                            setMensajeChip({
-                              texto: `Por favor acerca tu tarjeta o chip para activar la "${pc.nombre}".`,
-                              tipo: 'info'
-                            });
-                          }}
-                          className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-2xl shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                          onClick={() => setModalReservarPC(pc)}
+                          className="w-full py-2.5 rounded-full bg-white hover:bg-teal-400 text-black font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2"
                         >
-                          <CreditCard size={15} />
-                          <span>Tomar prestada esta PC con Chip</span>
+                          <Zap size={14} className="fill-black stroke-black" />
+                          <span>Usar con mi Tarjeta</span>
                         </button>
                       ) : (
                         <button
-                          onClick={() => {
-                            setModalLiberarPC(pc);
-                            setMensajeChip({
-                              texto: `Acerca la tarjeta o chip del alumno para liberar la "${pc.nombre}".`,
-                              tipo: 'info'
-                            });
-                          }}
-                          className="w-full py-2.5 bg-slate-900 hover:bg-rose-950 hover:text-rose-200 border border-slate-800 text-slate-400 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2"
+                          onClick={() => setModalLiberarPC(pc)}
+                          className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white font-semibold text-xs border border-white/[0.1] transition-all flex items-center justify-center gap-2"
                         >
-                          <RotateCcw size={14} />
-                          <span>Liberar Estación con Chip</span>
+                          <RotateCcw size={13} />
+                          <span>Liberar Terminal</span>
                         </button>
                       )}
                     </div>
@@ -863,199 +704,179 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
           </div>
         )}
 
-        {/* ======================================================== */}
-        {/* PESTAÑA C: MIS PRÉSTAMOS & DEVOLUCIONES CON CHIP           */}
-        {/* ======================================================== */}
+        {/* ------------------------------------------------------------- */}
+        {/* PESTAÑA C: MIS PRÉSTAMOS & DEVOLUCIONES */}
+        {/* ------------------------------------------------------------- */}
         {pestana === 'mis_prestamos' && (
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
             
-            <div className="bg-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 text-center space-y-4">
-              <div className="w-16 h-16 rounded-3xl bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto border border-teal-500/30">
-                <CreditCard size={32} />
-              </div>
-
-              <div>
-                <h3 className="text-2xl font-black text-white">Devolución y Estado de Cuenta con Chip</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
-                  Acerca tu credencial escolar al lector. La pantalla reconocerá tus datos, te mostrará tus libros en mano y podrás devolverlos en 1 solo paso.
-                </p>
-              </div>
-
-              {/* Si hay alumno reconocido */}
-              {alumnoIdentificado ? (
-                <div className="pt-4 border-t border-slate-800 text-left space-y-6 animate-in fade-in">
-                  
-                  {/* Ficha del Alumno */}
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            {alumnoIdentificado ? (
+              <div className="space-y-6">
+                
+                {/* Perfil del Alumno Apple Style */}
+                <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg">
+                      {alumnoIdentificado.nombre.charAt(0)}
+                    </div>
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-teal-400">Alumno Identificado</span>
-                      <h4 className="text-lg font-black text-white">{alumnoIdentificado.nombre}</h4>
-                      <p className="text-xs text-slate-400">
-                        {alumnoIdentificado.gradoGrupo} · Matrícula: <strong className="font-mono text-slate-300">{alumnoIdentificado.matricula}</strong>
-                      </p>
+                      <h3 className="text-lg font-bold text-white">{alumnoIdentificado.nombre}</h3>
+                      <p className="text-xs text-white/50">{alumnoIdentificado.gradoGrupo} · Matrícula: {alumnoIdentificado.matricula}</p>
                     </div>
-
-                    <button
-                      onClick={() => setAlumnoIdentificado(null)}
-                      className="text-xs text-slate-500 hover:text-white underline"
-                    >
-                      Consultar otro alumno
-                    </button>
                   </div>
 
-                  {/* Computadora actual si tiene */}
-                  {pcDelAlumno && (
-                    <div className="p-4 rounded-2xl bg-teal-950/40 border border-teal-800 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Laptop size={24} className="text-teal-400" />
-                        <div>
-                          <span className="text-xs font-bold text-teal-200">Tienes activa la {pcDelAlumno.nombre}</span>
-                          <span className="text-[11px] text-slate-400 block">Tiempo asignado: 60 minutos</span>
-                        </div>
-                      </div>
+                  <button
+                    onClick={() => setAlumnoIdentificado(null)}
+                    className="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium text-white/70 hover:text-white transition-all"
+                  >
+                    Cambiar
+                  </button>
+                </div>
 
-                      <button
-                        onClick={() => {
-                          const updated = storageService.liberarComputadora(pcDelAlumno.id, activeEscuelaId);
-                          setComputadoras(updated);
-                          reproducirSonido('devolver');
-                          setMensajeChip({ texto: `¡${pcDelAlumno.nombre} liberada con éxito!`, tipo: 'exito' });
-                        }}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
+                {/* Libros en poder del alumno */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-white/50 px-1">Tus Libros Prestados</h4>
+
+                  {librosDelAlumno.length === 0 ? (
+                    <div className="p-8 rounded-3xl bg-white/[0.02] border border-dashed border-white/[0.08] text-center text-white/40 text-xs">
+                      🎉 ¡Todo al día! No tienes ningún libro pendiente por devolver.
+                    </div>
+                  ) : (
+                    librosDelAlumno.map(p => (
+                      <div
+                        key={p.id}
+                        className="p-5 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
                       >
-                        Liberar Computadora Ahora
-                      </button>
-                    </div>
+                        <div>
+                          <span className="text-[10px] font-mono text-white/30">{p.codigoPrestamo}</span>
+                          <h5 className="text-base font-bold text-white">{p.libroTitulo}</h5>
+                          <p className="text-xs text-white/50">Entrega límite: <strong className="text-teal-300 font-medium">{p.fechaDevolucionEsperada}</strong></p>
+                        </div>
+
+                        <button
+                          onClick={() => handleDevolverLibroDirecto(p.id)}
+                          className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                        >
+                          <RotateCcw size={14} />
+                          <span>Devolver este Libro</span>
+                        </button>
+                      </div>
+                    ))
                   )}
+                </div>
 
-                  {/* Libros en Posesión */}
-                  <div className="space-y-3">
-                    <h5 className="text-sm font-black text-slate-300 uppercase tracking-wide">
-                      Libros Pendientes de Devolución ({librosDelAlumno.length})
-                    </h5>
-
-                    {librosDelAlumno.length === 0 ? (
-                      <div className="p-8 rounded-2xl bg-emerald-950/30 border border-emerald-800 text-center text-emerald-300 text-xs font-bold">
-                        🎉 ¡Excelente! No tienes ningún libro pendiente de devolución actualmente.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {librosDelAlumno.map(p => (
-                          <div
-                            key={p.id}
-                            className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
-                          >
-                            <div>
-                              <span className="text-[10px] font-mono font-bold text-slate-500">{p.codigoPrestamo}</span>
-                              <h6 className="text-base font-black text-white">{p.libroTitulo}</h6>
-                              <p className="text-xs text-slate-400">Prestado: {p.fechaPrestamo} · Entrega límite: <strong className="text-teal-300">{p.fechaDevolucionEsperada}</strong></p>
-                            </div>
-
-                            <button
-                              onClick={() => handleDevolverLibroDirecto(p.id)}
-                              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 self-end sm:self-auto"
-                            >
-                              <RotateCcw size={15} />
-                              <span>Confirmar Devolución de este Libro</span>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              </div>
+            ) : (
+              /* Tarjeta de bienvenida tipo Apple Wallet */
+              <div className="p-12 rounded-[36px] bg-gradient-to-b from-white/[0.05] to-white/[0.01] border border-white/[0.1] text-center space-y-6 shadow-2xl">
+                <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-teal-500/10 animate-ping opacity-40" />
+                  <div className="w-16 h-16 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-teal-400 shadow-xl">
+                    <CreditCard size={28} className="stroke-[2.2]" />
                   </div>
-
                 </div>
-              ) : (
-                <div className="p-8 rounded-2xl bg-slate-900/60 border border-dashed border-slate-800 text-slate-500 text-xs font-medium">
-                  💡 Pasa tu tarjeta por el sensor USB o introduce tu UID arriba para ver tus libros prestados.
-                </div>
-              )}
 
-            </div>
+                <div className="space-y-1.5 max-w-sm mx-auto">
+                  <h3 className="text-xl font-bold text-white">Consulta tus Préstamos</h3>
+                  <p className="text-xs text-white/50 leading-relaxed">
+                    Pasa tu tarjeta escolar por el lector en cualquier momento para ver los libros que tienes en casa y su fecha de entrega.
+                  </p>
+                </div>
+
+                {socios.length > 0 && (
+                  <div className="pt-2">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          procesarChip(e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      defaultValue=""
+                      className="px-4 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-white/70 text-xs font-medium cursor-pointer"
+                    >
+                      <option value="" disabled>O probar con alumno de demostración...</option>
+                      {socios.map(s => (
+                        <option key={s.id} value={s.nfcUid || s.matricula}>
+                          {s.nombre} ({s.gradoGrupo})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         )}
 
       </main>
 
-      {/* 5. MODAL DE PRÉSTAMO DE LIBRO CON CONFIRMACIÓN DE CHIP */}
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL APPLE PAY STYLE: CONFIRMACIÓN CON TARJETA DE LIBRO */}
+      {/* ------------------------------------------------------------- */}
       {modalPrestarLibro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-teal-500/50 shadow-2xl relative text-center space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
             
             <button
               onClick={() => setModalPrestarLibro(null)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-xl"
+              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
-            <div className="w-16 h-16 rounded-3xl bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto border border-teal-500/40">
-              <BookOpen size={32} />
-            </div>
-
-            <div>
-              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                Confirmación de Préstamo
-              </span>
-              <h3 className="text-xl font-black text-white mt-1">{modalPrestarLibro.titulo}</h3>
-              <p className="text-xs text-slate-400">{modalPrestarLibro.autor} · {modalPrestarLibro.nivel}</p>
-            </div>
-
-            {/* Animación de Espera de Chip y Campo de Entrada USB */}
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3.5">
-              <div className="relative w-12 h-12 mx-auto flex items-center justify-center text-teal-400">
-                <ScanLine size={32} className="animate-pulse" />
+            {/* Animación Onda Apple Pay */}
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-teal-500/20 animate-ping opacity-40" />
+              <div className="absolute inset-1.5 rounded-full bg-teal-500/20 animate-pulse" />
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-slate-950 shadow-xl shadow-teal-500/30">
+                <ScanLine size={24} className="stroke-[2.5]" />
               </div>
-              <h4 className="text-sm font-black text-white">Acerca tu tarjeta o chip escolar</h4>
-              <p className="text-xs text-slate-400">
-                Pasa tu credencial por el lector para confirmar el préstamo de 7 días.
-              </p>
+            </div>
 
-              {/* Input enfocado con autoFocus para capturar el lector USB al 100% */}
-              <div className="relative max-w-sm mx-auto">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Préstamo por 7 Días</span>
+              <h3 className="text-lg font-bold text-white">{modalPrestarLibro.titulo}</h3>
+              <p className="text-xs text-white/50">{modalPrestarLibro.autor}</p>
+            </div>
+
+            {/* Input con autoFocus para capturar el lector USB al 100% */}
+            <div className="space-y-3 pt-2">
+              <div className="relative">
                 <input
                   ref={modalInputRef}
                   type="text"
                   autoFocus
-                  placeholder="Pasa tu tarjeta por el lector USB..."
+                  placeholder="Acerca tu tarjeta escolar..."
                   value={modalScanInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setModalScanInput(val);
-                  }}
+                  onChange={(e) => setModalScanInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && modalScanInput.trim().length >= 3) {
                       e.preventDefault();
-                      if (modalScanInput.trim().length >= 3) {
-                        procesarChip(modalScanInput.trim());
-                        setModalScanInput('');
-                      }
+                      procesarChip(modalScanInput.trim());
+                      setModalScanInput('');
                     }
                   }}
-                  className="w-full px-4 py-3 bg-slate-900 border-2 border-teal-500/80 focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 text-teal-300 font-mono text-center text-sm rounded-2xl placeholder:text-slate-500 shadow-inner"
+                  className="w-full px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.12] focus:border-teal-400 focus:bg-white/[0.08] text-center font-mono text-xs text-teal-300 placeholder:text-white/30 outline-none shadow-inner"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-teal-400 text-xs font-bold pointer-events-none">
-                  <ScanLine size={16} className="animate-pulse" />
-                  <span>Listo</span>
-                </div>
               </div>
 
-              {/* Si el chip fue leído por USB pero aún no está asignado a un alumno */}
+              {/* Si el chip no estaba vinculado aún en la biblioteca */}
               {chipNoRegistrado && (
-                <div className="p-4 rounded-2xl bg-amber-950/70 border border-amber-600/80 text-left space-y-2.5 animate-in zoom-in-95">
-                  <div className="flex items-center gap-2 text-amber-300 font-black text-xs">
-                    <AlertCircle size={16} />
-                    <span>¡Tarjeta Detectada! UID: {chipNoRegistrado}</span>
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left space-y-2.5 animate-in zoom-in-95">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                    <AlertCircle size={15} />
+                    <span>Tarjeta Detectada (UID: {chipNoRegistrado})</span>
                   </div>
-                  <p className="text-[11px] text-amber-200/90 leading-tight">
-                    Esta tarjeta fue detectada por el sensor pero aún no está asociada a ningún alumno en la biblioteca. Selecciona a qué alumno pertenece para vincularla y confirmar el préstamo ahora mismo:
+                  <p className="text-[11px] text-amber-200/80 leading-tight">
+                    Selecciona tu nombre en la lista para asociar tu tarjeta y pedir el libro:
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
                     <select
                       value={socioParaVincularId}
                       onChange={(e) => setSocioParaVincularId(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-slate-900 border border-amber-600/50 text-white text-xs font-bold rounded-xl"
+                      className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-medium outline-none"
                     >
                       <option value="">Selecciona al alumno...</option>
                       {socios.map(s => (
@@ -1066,7 +887,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       type="button"
                       disabled={!socioParaVincularId}
                       onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
-                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all whitespace-nowrap"
+                      className="px-4 py-2 rounded-xl bg-white hover:bg-teal-400 disabled:opacity-40 text-black font-bold text-xs transition-all whitespace-nowrap"
                     >
                       Vincular y Prestar
                     </button>
@@ -1074,9 +895,8 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                 </div>
               )}
 
-              {/* Selector de prueba rápida */}
-              <div className="pt-1 flex items-center justify-center gap-2 max-w-sm mx-auto">
-                {socios.length > 0 && (
+              {socios.length > 0 && (
+                <div className="pt-2">
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
@@ -1084,135 +904,97 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-1.5 bg-slate-800/80 border border-slate-700/80 text-slate-400 hover:text-teal-300 text-[11px] font-medium rounded-xl"
+                    className="px-3 py-1.5 rounded-full bg-white/[0.04] text-white/40 hover:text-white text-[11px] font-medium border border-white/[0.06] cursor-pointer"
                   >
-                    <option value="" disabled>O seleccionar tarjeta de prueba...</option>
+                    <option value="" disabled>O probar con tarjeta de demostración...</option>
                     {socios.map(s => (
                       <option key={s.id} value={s.nfcUid || s.matricula}>
                         {s.nombre} ({s.gradoGrupo})
                       </option>
                     ))}
                   </select>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setModalPrestarLibro(null)}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
-              >
-                Cancelar
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 6. MODAL DE ÉXITO DE PRÉSTAMO */}
-      {prestamoExitosoInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-emerald-500/50 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
-              <CheckCircle2 size={36} />
-            </div>
-
-            <h3 className="text-2xl font-black text-white">¡Préstamo Confirmado!</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              El libro <strong className="text-teal-300">"{prestamoExitosoInfo.libro}"</strong> ha sido prestado con éxito a <strong className="text-white">{prestamoExitosoInfo.alumno}</strong>.
-            </p>
-
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-              <span className="text-slate-400 block">Fecha límite de devolución:</span>
-              <span className="text-base font-black text-emerald-400 font-mono">{prestamoExitosoInfo.fechaDev}</span>
+                </div>
+              )}
             </div>
 
             <button
-              onClick={() => setPrestamoExitosoInfo(null)}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+              onClick={() => setModalPrestarLibro(null)}
+              className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white/70 hover:text-white transition-colors"
             >
-              ¡Entendido, gracias!
+              Cancelar
             </button>
+
           </div>
         </div>
       )}
 
-      {/* 7. MODAL DE CONFIRMACIÓN DE COMPUTADORA */}
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL RESERVAR COMPUTADORA */}
+      {/* ------------------------------------------------------------- */}
       {modalReservarPC && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-teal-500/50 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto border border-teal-500/40">
-              <Laptop size={32} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
+            
+            <button
+              onClick={() => setModalReservarPC(null)}
+              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-teal-500/10 text-teal-400 border border-teal-500/20 flex items-center justify-center mx-auto">
+              <Laptop size={28} />
             </div>
 
-            <h3 className="text-xl font-black text-white">Reservar {modalReservarPC.nombre}</h3>
-            <p className="text-xs text-slate-400">
-              {modalReservarPC.modelo} · Tiempo de sesión: 60 minutos
-            </p>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Reservar {modalReservarPC.nombre}</h3>
+              <p className="text-xs text-white/50">Sesión de 60 minutos · {modalReservarPC.modelo}</p>
+            </div>
 
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-teal-500/60 text-center space-y-3.5">
-              <ScanLine size={28} className="mx-auto text-teal-400 animate-pulse" />
-              <h4 className="text-xs font-black text-white">Acerca tu tarjeta escolar al lector</h4>
-              <p className="text-[11px] text-slate-400">Para asignarte esta máquina de inmediato por 60 minutos.</p>
+            <div className="space-y-3 pt-2">
+              <input
+                ref={modalInputRef}
+                type="text"
+                autoFocus
+                placeholder="Acerca tu tarjeta escolar..."
+                value={modalScanInput}
+                onChange={(e) => setModalScanInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && modalScanInput.trim().length >= 3) {
+                    e.preventDefault();
+                    procesarChip(modalScanInput.trim());
+                    setModalScanInput('');
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.12] focus:border-teal-400 text-center font-mono text-xs text-teal-300 placeholder:text-white/30 outline-none"
+              />
 
-              {/* Input enfocado con autoFocus para capturar el lector USB al 100% */}
-              <div className="relative max-w-sm mx-auto">
-                <input
-                  ref={modalInputRef}
-                  type="text"
-                  autoFocus
-                  placeholder="Pasa tu tarjeta por el lector USB..."
-                  value={modalScanInput}
-                  onChange={(e) => setModalScanInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (modalScanInput.trim().length >= 3) {
-                        procesarChip(modalScanInput.trim());
-                        setModalScanInput('');
-                      }
-                    }
-                  }}
-                  className="w-full px-4 py-2.5 bg-slate-900 border-2 border-teal-500/80 focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 text-teal-300 font-mono text-center text-xs rounded-2xl placeholder:text-slate-500 shadow-inner"
-                />
-              </div>
-
-              {/* Si el chip fue leído por USB pero aún no está asignado a un alumno */}
               {chipNoRegistrado && (
-                <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-600/80 text-left space-y-2 animate-in zoom-in-95">
-                  <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
-                    <AlertCircle size={15} />
-                    <span>Tarjeta Detectada (UID: {chipNoRegistrado})</span>
-                  </div>
-                  <p className="text-[10px] text-amber-200/90 leading-tight">
-                    Selecciona al alumno para asociar este chip y comenzar a usar la computadora:
-                  </p>
-                  <div className="flex flex-col gap-1.5 pt-1">
-                    <select
-                      value={socioParaVincularId}
-                      onChange={(e) => setSocioParaVincularId(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-slate-900 border border-amber-600/50 text-white text-xs font-bold rounded-xl"
-                    >
-                      <option value="">Selecciona al alumno...</option>
-                      {socios.map(s => (
-                        <option key={s.id} value={s.id}>{s.nombre} ({s.gradoGrupo})</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      disabled={!socioParaVincularId}
-                      onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
-                      className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all"
-                    >
-                      Vincular y Usar Computadora
-                    </button>
-                  </div>
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left space-y-2 animate-in zoom-in-95">
+                  <span className="text-xs font-bold text-amber-300 block">Tarjeta Detectada (UID: {chipNoRegistrado})</span>
+                  <select
+                    value={socioParaVincularId}
+                    onChange={(e) => setSocioParaVincularId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-medium outline-none"
+                  >
+                    <option value="">Selecciona al alumno...</option>
+                    {socios.map(s => (
+                      <option key={s.id} value={s.id}>{s.nombre} ({s.gradoGrupo})</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!socioParaVincularId}
+                    onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
+                    className="w-full py-2 rounded-xl bg-white text-black font-bold text-xs"
+                  >
+                    Vincular y Usar Terminal
+                  </button>
                 </div>
               )}
 
               {socios.length > 0 && (
-                <div className="pt-1 flex justify-center">
+                <div className="pt-2">
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
@@ -1220,9 +1002,9 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-1.5 bg-slate-800/80 border border-slate-700/80 text-slate-400 hover:text-teal-300 text-[11px] font-medium rounded-xl max-w-xs"
+                    className="px-3 py-1.5 rounded-full bg-white/[0.04] text-white/40 hover:text-white text-[11px] font-medium border border-white/[0.06] cursor-pointer"
                   >
-                    <option value="" disabled>O seleccionar tarjeta de prueba...</option>
+                    <option value="" disabled>O probar con tarjeta de demostración...</option>
                     {socios.map(s => (
                       <option key={s.id} value={s.nfcUid || s.matricula}>
                         {s.nombre} ({s.gradoGrupo})
@@ -1235,61 +1017,94 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
             <button
               onClick={() => setModalReservarPC(null)}
-              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+              className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white/70 hover:text-white transition-colors"
             >
               Cancelar
             </button>
+
           </div>
         </div>
       )}
 
-      {/* 8. MODAL DE LIBERAR COMPUTADORA */}
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL LIBERAR COMPUTADORA */}
+      {/* ------------------------------------------------------------- */}
       {modalLiberarPC && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-rose-500/50 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/40">
-              <RotateCcw size={32} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
+            
+            <button
+              onClick={() => setModalLiberarPC(null)}
+              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto">
+              <RotateCcw size={28} />
             </div>
 
-            <h3 className="text-xl font-black text-white">Liberar {modalLiberarPC.nombre}</h3>
-            <p className="text-xs text-slate-400">
-              Actualmente en uso por: <strong className="text-white">{modalLiberarPC.socioNombreActual || 'Alumno'}</strong>
-            </p>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Liberar {modalLiberarPC.nombre}</h3>
+              <p className="text-xs text-white/50">Actualmente en uso por {modalLiberarPC.socioNombreActual || 'Alumno'}</p>
+            </div>
 
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-rose-500/60 text-center space-y-3">
-              <ScanLine size={28} className="mx-auto text-rose-400 animate-pulse" />
-              <h4 className="text-xs font-black text-white">Pasa tu chip escolar para confirmar</h4>
-              <p className="text-[11px] text-slate-400">La estación quedará libre para otros compañeros.</p>
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  const updated = storageService.liberarComputadora(modalLiberarPC.id, activeEscuelaId);
+                  setComputadoras(updated);
+                  reproducirSonido('devolver');
+                  mostrarToast('¡Estación liberada con éxito!', 'exito');
+                  setModalLiberarPC(null);
+                }}
+                className="w-full py-3 rounded-full bg-white hover:bg-rose-400 text-black font-bold text-xs shadow-md transition-all"
+              >
+                Confirmar Liberación de Terminal
+              </button>
+            </div>
 
-              <div className="pt-2 flex justify-center">
-                <button
-                  onClick={() => {
-                    const updated = storageService.liberarComputadora(modalLiberarPC.id, activeEscuelaId);
-                    setComputadoras(updated);
-                    reproducirSonido('devolver');
-                    setMensajeChip({ texto: `¡Estación liberada con éxito!`, tipo: 'exito' });
-                    setModalLiberarPC(null);
-                  }}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-xs"
-                >
-                  Confirmar Liberación Ahora
-                </button>
-              </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL ÉXITO DE PRÉSTAMO */}
+      {/* ------------------------------------------------------------- */}
+      {prestamoExitosoInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-emerald-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl text-center space-y-5">
+            
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+              <CheckCircle2 size={36} />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-white">¡Préstamo Confirmado!</h3>
+              <p className="text-xs text-white/60 leading-relaxed">
+                El libro <strong className="text-teal-300">"{prestamoExitosoInfo.libro}"</strong> ha sido prestado con éxito a <strong className="text-white">{prestamoExitosoInfo.alumno}</strong>.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs space-y-1">
+              <span className="text-white/40 block text-[10px] uppercase font-semibold">Fecha límite de devolución:</span>
+              <span className="text-base font-bold text-emerald-400 font-mono">{prestamoExitosoInfo.fechaDev}</span>
             </div>
 
             <button
-              onClick={() => setModalLiberarPC(null)}
-              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+              onClick={() => setPrestamoExitosoInfo(null)}
+              className="w-full py-3 rounded-full bg-white hover:bg-emerald-400 text-black font-bold text-xs shadow-lg transition-all"
             >
-              Cancelar
+              Listo
             </button>
+
           </div>
         </div>
       )}
 
-      {/* FOOTER DISCRETO */}
-      <footer className="py-4 border-t border-slate-800/80 text-center text-xs text-slate-500">
-        Biblioteca Cloud · Kiosco de Autoservicio Escolar conectado a asistencia.iaparamaestros.org
+      {/* Footer minimalista Apple */}
+      <footer className="py-4 border-t border-white/[0.06] text-center text-[11px] text-white/30 font-medium">
+        Biblioteca Cloud · Kiosco Escolar Automatizado
       </footer>
 
     </div>
