@@ -84,7 +84,7 @@ export function normalizarUid(raw: string): string {
 export const chipService = {
   /**
    * Identifica un alumno o docente al pasar su tarjeta/chip
-   * Busca en caché local de la escuela y en vivo en PostgreSQL de asistencia.iaparamaestros.org
+   * Busca en el padrón de socios/lectores de la escuela almacenado en EduPortal
    */
   identificarChip: async (
     rawUid: string, 
@@ -98,7 +98,7 @@ export const chipService = {
     const escId = institucionId || 'esc-101';
     const sociosLocales = storageService.getSocios(escId);
 
-    // 1. Verificación instantánea en Socios de la escuela activa
+    // 1. Verificación en Socios de la escuela activa
     const socioLocal = sociosLocales.find(s => {
       const u = normalizarUid(s.nfcUid || '');
       const m = normalizarUid(s.matricula || '');
@@ -114,66 +114,11 @@ export const chipService = {
       };
     }
 
-    // 2. Consulta en vivo al servidor oficial de asistencia (PostgreSQL)
-    try {
-      const sesion = authService.getSesion();
-      const token = sesion?.token;
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`${ASISTENCIA_BASE_URL}/api/biblioteca/scan-chip`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          uid: clean,
-          institucion_id: escId
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.encontrado && data.socio) {
-          const s = data.socio;
-          const nuevoSocio: Socio = {
-            id: s.id,
-            matricula: s.matricula,
-            nombre: s.nombre,
-            rol: s.rol || 'alumno',
-            gradoGrupo: s.gradoGrupo || 'General',
-            email: s.email || `${s.id}@escuela.edu.mx`,
-            telefono: s.telefono || '',
-            nfcUid: s.nfcUid || clean,
-            fotoUrl: s.fotoUrl || undefined,
-            prestamosActivos: 0,
-            fechaRegistro: new Date().toISOString().split('T')[0]
-          };
-
-          // Guardar automáticamente en el catálogo local de lectores de la escuela
-          storageService.saveSocio(nuevoSocio, escId);
-          reproducirSonido('exito');
-
-          return {
-            encontrado: true,
-            socio: nuevoSocio,
-            tipo: nuevoSocio.rol
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('No se pudo conectar con el servidor de asistencia en vivo, buscando en respaldo...', err);
-    }
-
-    // 3. Fallback de contingencia: Si no está en BD pero tiene formato de chip válido,
-    // permitir reconocimiento inmediato o sugerir asociarlo
+    // 2. Si no está registrado en el padrón de la biblioteca
     reproducirSonido('error');
     return {
       encontrado: false,
-      mensaje: `Chip UID: ${clean} no encontrado en el padrón de alumnos de la escuela.`
+      mensaje: `Chip UID (${clean}) no registrado en Biblioteca. Regístralo o asígnalo en la sección 'Lectores / Socios'.`
     };
   },
 
