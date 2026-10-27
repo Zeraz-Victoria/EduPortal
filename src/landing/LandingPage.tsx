@@ -2,7 +2,7 @@ import React from 'react';
 import { GraduationCap, Scale, Sparkles, ArrowRight, Zap, ShieldCheck, BookOpen, Brain, GamepadIcon, ExternalLink, Heart, AppWindow, Cloud, MonitorPlay, QrCode, FileCheck, Volume2, ClipboardCheck } from 'lucide-react';
 
 interface LandingPageProps {
-    onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/simulador') => void;
+    onNavigate: (route: '/' | '/eduplan' | '/edulegal' | '/simulador' | '/biblioteca') => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
@@ -347,7 +347,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
                     {/* Biblioteca Cloud Card */}
                     <div
-                        onClick={() => window.open('https://biblioteca-cloud.onrender.com', '_blank')}
+                        onClick={() => onNavigate('/biblioteca')}
                         className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden cursor-pointer hover:border-teal-300 transition-all duration-300 flex flex-col"
                     >
                         <div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-500 absolute top-0 left-0" />
@@ -359,18 +359,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                                 <div className="pt-1">
                                     <div className="inline-flex items-center gap-1 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-md mb-1">
                                         <BookOpen size={9} className="text-teal-600" />
-                                        <span className="text-[8px] font-black text-teal-700 uppercase tracking-widest">Recursos Digitales</span>
+                                        <span className="text-[8px] font-black text-teal-700 uppercase tracking-widest">SaaS Escolar & NEM</span>
                                     </div>
                                     <h2 className="text-lg font-black text-slate-900 leading-tight">Biblioteca Cloud</h2>
                                 </div>
                             </div>
                             <p className="text-slate-500 text-xs leading-relaxed font-medium mb-5 line-clamp-2">
-                                Almacenamiento centralizado y gestión en la nube de recursos bibliográficos gratuitos para consulta y descarga.
+                                Catálogo digital de libros SEP/NEM, gestión de préstamos, control de computadoras, lectores y asistente IA.
                             </p>
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Cloud size={12} /> Repositorio Web</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Cloud size={12} /> Gestión & Kiosco</span>
                                 <div className="text-teal-600 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    Abrir <ExternalLink size={14} />
+                                    Entrar <ArrowRight size={14} />
                                 </div>
                             </div>
                         </div>

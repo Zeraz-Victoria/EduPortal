@@ -3,14 +3,16 @@ import LandingPage from './landing/LandingPage';
 import EduPlanApp from './eduplan/App';
 import EduLegalApp from './edulegal/App';
 import SimuladorApp from './simulador/App';
+import BibliotecaApp from './biblioteca/App';
 
-type Route = '/' | '/eduplan' | '/edulegal' | '/simulador';
+type Route = '/' | '/eduplan' | '/edulegal' | '/simulador' | '/biblioteca';
 
 function getRoute(): Route {
     const hash = window.location.hash.replace('#', '') || '/';
     if (hash === '/eduplan') return '/eduplan';
     if (hash === '/edulegal') return '/edulegal';
     if (hash === '/simulador') return '/simulador';
+    if (hash === '/biblioteca') return '/biblioteca';
     return '/';
 }
 
@@ -31,6 +33,7 @@ function App() {
     if (route === '/eduplan') return <EduPlanApp onBack={() => navigate('/')} />;
     if (route === '/edulegal') return <EduLegalApp onBack={() => navigate('/')} />;
     if (route === '/simulador') return <SimuladorApp onBack={() => navigate('/')} />;
+    if (route === '/biblioteca') return <BibliotecaApp onBack={() => navigate('/')} />;
     return <LandingPage onNavigate={navigate} />;
 }
 
