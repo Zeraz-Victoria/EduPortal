@@ -21,12 +21,15 @@ import {
   Layers,
   ChevronRight,
   ShieldCheck,
-  Zap
+  Zap,
+  Bot,
+  Send
 } from 'lucide-react';
-import { Libro, Prestamo, Computadora, Socio, EscuelaSaaS } from '../types';
+import { Libro, Prestamo, Computadora, Socio, EscuelaSaaS, MensajeChat } from '../types';
 import { storageService } from '../services/storageService';
 import { authService } from '../services/authService';
 import { chipService, reproducirSonido } from '../services/chipService';
+import { consultarBibliotecarioIA } from '../services/aiBibliotecario';
 
 interface KioscoStandaloneAppProps {
   onSalir?: () => void;
@@ -48,11 +51,69 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
   const [socios, setSocios] = useState<Socio[]>([]);
 
   // 3. Navegación estilo Apple Segmented Control
-  const [pestana, setPestana] = useState<'catalogo' | 'computo' | 'mis_prestamos'>('catalogo');
+  const [pestana, setPestana] = useState<'catalogo' | 'computo' | 'mis_prestamos' | 'ia'>('catalogo');
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
   const [esPantallaCompleta, setEsPantallaCompleta] = useState(false);
   const [horaActual, setHoraActual] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
+
+  // Chat del Bibliotecario Virtual Inteligente
+  const [mensajesChatIA, setMensajesChatIA] = useState<MensajeChat[]>([
+    {
+      id: 'msg-welcome-kiosco',
+      remitente: 'ia',
+      contenido: '¡Hola! Soy tu **Bibliotecario Escolar Inteligente** 📚✨. Dime qué tema estás investigando, qué materias tienes hoy o qué tipo de lectura te gustaría descubrir.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ]);
+  const [inputChatIA, setInputChatIA] = useState('');
+  const [cargandoChatIA, setCargandoChatIA] = useState(false);
+
+  const sugerenciasKiosco = [
+    '¿Qué libro me recomiendas para divertirme leyendo?',
+    '¿Qué materiales me sirven para mi proyecto de ciencias?',
+    '¿Tienen cuentos o novelas de aventuras y misterio?',
+    '¿Qué libros de historia o geografía hay disponibles?'
+  ];
+
+  const handleEnviarChatIA = async (texto: string) => {
+    if (!texto.trim() || cargandoChatIA) return;
+    const textoLimpio = texto.trim();
+    setInputChatIA('');
+
+    const nuevoMsgUsuario: MensajeChat = {
+      id: `msg-usr-${Date.now()}`,
+      remitente: 'usuario',
+      contenido: textoLimpio,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMensajesChatIA(prev => [...prev, nuevoMsgUsuario]);
+    setCargandoChatIA(true);
+
+    try {
+      const res = await consultarBibliotecarioIA(textoLimpio, libros);
+      const nuevoMsgIA: MensajeChat = {
+        id: `msg-ia-${Date.now()}`,
+        remitente: 'ia',
+        contenido: res.texto,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        librosSugeridos: res.librosRecomendados
+      };
+      setMensajesChatIA(prev => [...prev, nuevoMsgIA]);
+    } catch (err) {
+      setMensajesChatIA(prev => [
+        ...prev,
+        {
+          id: `msg-err-${Date.now()}`,
+          remitente: 'ia',
+          contenido: 'No pude procesar tu consulta en este momento. Por favor inténtalo de nuevo.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } finally {
+      setCargandoChatIA(false);
+    }
+  };
 
   // 4. Modales de confirmación con Chip (Apple Pay style)
   const [modalPrestarLibro, setModalPrestarLibro] = useState<Libro | null>(null);
@@ -219,7 +280,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         const updated = storageService.liberarComputadora(modalLiberarPC.id, activeEscuelaId);
         setComputadoras(updated);
         reproducirSonido('devolver');
-        mostrarToast(`¡${modalLiberarPC.nombre} liberada exitosamente!`, 'exito');
+        mostrarToast(`¡${modalLiberarPC.nombre} liberada exitosamente con tarjeta de ${alumno.nombre}!`, 'exito');
         setModalLiberarPC(null);
         setModalScanInput('');
         return;
@@ -352,77 +413,89 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
   }, [prestamos, alumnoIdentificado]);
 
   return (
-    <div className="min-h-screen bg-[#070709] text-[#F5F5F7] font-sans antialiased selection:bg-teal-500 selection:text-white flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#070E1B] text-[#F1F5F9] font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col justify-between relative overflow-x-hidden">
       
-      {/* Luz ambiental sutil (Apple Ambient Glow) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-teal-500/10 via-emerald-500/5 to-transparent blur-[120px] pointer-events-none -z-10" />
+      {/* Luz ambiental azul marino biblioteca */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[380px] bg-gradient-to-b from-blue-700/20 via-indigo-600/10 to-transparent blur-[140px] pointer-events-none -z-10" />
 
-      {/* 1. BARRA SUPERIOR APPLE GLASSMORPHISM */}
-      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-[#070709]/75 border-b border-white/[0.08] px-4 sm:px-8 py-3.5 transition-all">
+      {/* 1. BARRA SUPERIOR AZUL MARINO GLASSMORPHISM */}
+      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-[#0B1528]/85 border-b border-blue-900/35 px-4 sm:px-8 py-3.5 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
-          {/* Logo Apple Squircle & Título */}
+          {/* Logo Squircle & Título */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-white/[0.12] to-white/[0.02] border border-white/[0.15] flex items-center justify-center text-teal-400 shadow-md">
-              <Sparkles size={20} className="stroke-[2.2]" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-950 via-blue-900 to-indigo-800 border border-blue-700/30 flex items-center justify-center text-blue-300 shadow-md shadow-blue-950/40">
+              <BookOpen size={20} className="stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-base sm:text-lg font-black tracking-tight text-white leading-none">
-                  Kiosco<span className="text-teal-400 font-normal">Escolar</span>
+                  Biblioteca <span className="text-blue-400 font-semibold">Escolar</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-[10px] font-semibold text-blue-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                   Sensor Listo
                 </span>
               </div>
-              <p className="text-[11px] text-white/40 font-medium truncate max-w-[200px] sm:max-w-xs mt-0.5">
-                {escuelaActiva ? escuelaActiva.nombre : 'Biblioteca Cloud'}
+              <p className="text-[11px] text-blue-200/50 font-medium truncate max-w-[200px] sm:max-w-xs mt-0.5">
+                {escuelaActiva ? escuelaActiva.nombre : 'Kiosco de Autoservicio'}
               </p>
             </div>
           </div>
 
-          {/* Selector Central: Apple Segmented Pill Control */}
-          <nav className="flex items-center p-1 rounded-full bg-white/[0.06] border border-white/[0.08] backdrop-blur-xl shadow-inner">
+          {/* Selector Central: Segmented Pill Control */}
+          <nav className="flex items-center p-1 rounded-full bg-[#060D1A]/80 border border-blue-900/40 backdrop-blur-xl shadow-inner">
             <button
               onClick={() => setPestana('catalogo')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 pestana === 'catalogo'
-                  ? 'bg-white text-black shadow-sm scale-[1.02]'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40 scale-[1.02]'
+                  : 'text-blue-200/70 hover:text-white hover:bg-white/[0.05]'
               }`}
             >
-              <BookOpen size={14} />
+              <BookOpen size={14} className={pestana === 'catalogo' ? 'text-white' : 'text-blue-400'} />
               <span>Libros</span>
             </button>
 
             <button
               onClick={() => setPestana('computo')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 pestana === 'computo'
-                  ? 'bg-white text-black shadow-sm scale-[1.02]'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40 scale-[1.02]'
+                  : 'text-blue-200/70 hover:text-white hover:bg-white/[0.05]'
               }`}
             >
-              <Laptop size={14} />
+              <Laptop size={14} className={pestana === 'computo' ? 'text-white' : 'text-blue-400'} />
               <span>Cómputo</span>
             </button>
 
             <button
               onClick={() => setPestana('mis_prestamos')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 pestana === 'mis_prestamos'
-                  ? 'bg-white text-black shadow-sm scale-[1.02]'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40 scale-[1.02]'
+                  : 'text-blue-200/70 hover:text-white hover:bg-white/[0.05]'
               }`}
             >
-              <User size={14} />
+              <User size={14} className={pestana === 'mis_prestamos' ? 'text-white' : 'text-blue-400'} />
               <span>Mis Préstamos</span>
               {librosDelAlumno.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-teal-500 text-black text-[10px] font-black flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center">
                   {librosDelAlumno.length}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setPestana('ia')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                pestana === 'ia'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40 scale-[1.02]'
+                  : 'text-blue-200/70 hover:text-white hover:bg-white/[0.05]'
+              }`}
+            >
+              <Bot size={14} className={pestana === 'ia' ? 'text-white' : 'text-blue-400'} />
+              <span>Bibliotecario IA</span>
             </button>
           </nav>
 
@@ -483,26 +556,26 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             {/* Barra de Búsqueda Apple Search Capsule */}
             <div className="max-w-2xl mx-auto space-y-4">
               <div className="relative">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300/40" />
                 <input
                   type="text"
                   id="apple-kiosco-search"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   placeholder="Buscar por título, autor, materia o código..."
-                  className="w-full pl-11 pr-10 py-3.5 rounded-full bg-white/[0.05] border border-white/[0.1] focus:border-teal-400/80 focus:bg-white/[0.08] text-sm text-white placeholder:text-white/40 backdrop-blur-xl transition-all outline-none shadow-sm"
+                  className="w-full pl-11 pr-10 py-3.5 rounded-full bg-[#0B1528]/80 border border-blue-900/50 focus:border-blue-400 focus:bg-[#0E1C38] text-sm text-white placeholder:text-blue-300/40 backdrop-blur-xl transition-all outline-none shadow-sm"
                 />
                 {busqueda && (
                   <button 
                     onClick={() => setBusqueda('')} 
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-300/40 hover:text-white p-1"
                   >
                     <X size={15} />
                   </button>
                 )}
               </div>
 
-              {/* Cápsulas de Categorías estilo Apple Music */}
+              {/* Cápsulas de Categorías */}
               <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
                 {categorias.map(cat => (
                   <button
@@ -510,8 +583,8 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                     onClick={() => setCategoriaFiltro(cat)}
                     className={`px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap ${
                       categoriaFiltro === cat
-                        ? 'bg-white text-black font-semibold shadow-sm scale-[1.02]'
-                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-white/60 border border-white/[0.06]'
+                        ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/40 scale-[1.02]'
+                        : 'bg-[#0B1528]/60 hover:bg-[#0E1C38] text-blue-200/70 border border-blue-900/40'
                     }`}
                   >
                     {cat === 'todos' ? 'Todos' : cat}
@@ -520,7 +593,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
               </div>
             </div>
 
-            {/* Grid de Libros Apple Cards */}
+            {/* Grid de Libros Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {librosFiltrados.map((libro) => {
                 const disponible = libro.ejemplaresDisponibles > 0;
@@ -528,13 +601,13 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                 return (
                   <div
                     key={libro.id}
-                    className="group rounded-3xl p-6 bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.08] hover:border-white/[0.16] transition-all duration-200 flex flex-col justify-between shadow-xl relative overflow-hidden"
+                    className="group rounded-3xl p-6 bg-[#0B1528]/70 hover:bg-[#0E1C38]/90 border border-blue-900/40 hover:border-blue-500/40 transition-all duration-200 flex flex-col justify-between shadow-xl relative overflow-hidden"
                   >
                     <div className="space-y-3">
                       
                       {/* Metadatos superiores */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 rounded-full bg-white/[0.05] text-white/60 border border-white/[0.08] truncate max-w-[60%]">
+                        <span className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 rounded-full bg-[#060D1A] text-blue-300 border border-blue-800/40 truncate max-w-[60%]">
                           {libro.categoria}
                         </span>
                         
@@ -550,38 +623,38 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
                       {/* Título & Autor */}
                       <div>
-                        <h3 className="text-base font-bold text-white group-hover:text-teal-300 transition-colors leading-snug">
+                        <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors leading-snug">
                           {libro.titulo}
                         </h3>
-                        <p className="text-xs text-white/50 font-medium mt-1">
+                        <p className="text-xs text-blue-200/60 font-medium mt-1">
                           {libro.autor} {libro.editorial ? `· ${libro.editorial}` : ''}
                         </p>
                       </div>
 
                       {/* Sinopsis */}
-                      <p className="text-xs text-white/40 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-blue-100/50 line-clamp-2 leading-relaxed">
                         {libro.descripcion}
                       </p>
 
                       {/* Ubicación y Código */}
-                      <div className="pt-2 flex items-center justify-between text-[11px] text-white/30 font-mono">
+                      <div className="pt-2 flex items-center justify-between text-[11px] text-blue-300/40 font-mono">
                         <span>Código: {libro.codigo}</span>
-                        <span className="text-white/60">{libro.ubicacionEstante || 'Estante Principal'}</span>
+                        <span className="text-blue-200/70">{libro.ubicacionEstante || 'Estante Principal'}</span>
                       </div>
 
                     </div>
 
-                    {/* Botón Acción Apple Pill */}
-                    <div className="pt-5 mt-4 border-t border-white/[0.06]">
+                    {/* Botón Acción Pill */}
+                    <div className="pt-5 mt-4 border-t border-blue-900/40">
                       {disponible ? (
                         <button
                           onClick={() => {
                             setModalPrestarLibro(libro);
                             setChipNoRegistrado(null);
                           }}
-                          className="w-full py-2.5 rounded-full bg-white hover:bg-teal-400 text-black font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.01]"
+                          className="w-full py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-md shadow-blue-950/40 flex items-center justify-center gap-2 group-hover:scale-[1.01]"
                         >
-                          <Zap size={14} className="fill-black stroke-black" />
+                          <Zap size={14} className="fill-white stroke-white" />
                           <span>Pedir con mi Tarjeta</span>
                         </button>
                       ) : (
@@ -601,9 +674,9 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
             {librosFiltrados.length === 0 && (
               <div className="text-center py-16 space-y-3">
-                <BookOpen size={40} className="mx-auto text-white/20" />
+                <BookOpen size={40} className="mx-auto text-blue-300/20" />
                 <h4 className="text-base font-bold text-white">No se encontraron libros</h4>
-                <p className="text-xs text-white/40 max-w-sm mx-auto">
+                <p className="text-xs text-blue-200/50 max-w-sm mx-auto">
                   Prueba buscando con otra palabra o selecciona otra categoría arriba.
                 </p>
               </div>
@@ -620,12 +693,12 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             
             <div className="text-center max-w-lg mx-auto space-y-1">
               <h2 className="text-xl font-bold tracking-tight text-white">Centro de Cómputo</h2>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-blue-200/60">
                 Selecciona una estación libre y pasa tu tarjeta escolar para activarla por 60 minutos.
               </p>
             </div>
 
-            {/* Grid de Computadoras estilo Apple Hardware */}
+            {/* Grid de Computadoras */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {computadoras.map((pc) => {
                 const disponible = pc.estado === 'disponible';
@@ -635,15 +708,15 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                     key={pc.id}
                     className={`rounded-3xl p-6 border transition-all duration-200 flex flex-col justify-between shadow-xl ${
                       disponible 
-                        ? 'bg-white/[0.03] hover:bg-white/[0.05] border-white/[0.08]' 
-                        : 'bg-amber-950/20 border-amber-500/20'
+                        ? 'bg-[#0B1528]/70 hover:bg-[#0E1C38]/90 border-blue-900/40' 
+                        : 'bg-[#0D182E]/90 border-amber-500/30'
                     }`}
                   >
                     <div className="space-y-3">
                       
                       <div className="flex items-center justify-between">
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                          disponible ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          disponible ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
                           <Laptop size={20} />
                         </div>
@@ -660,12 +733,12 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
                       <div>
                         <h4 className="text-base font-bold text-white">{pc.nombre}</h4>
-                        <p className="text-xs text-white/40">{pc.modelo}</p>
+                        <p className="text-xs text-blue-200/50">{pc.modelo}</p>
                       </div>
 
                       {!disponible && pc.socioNombreActual && (
-                        <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-xs space-y-1">
-                          <span className="text-white/40 block text-[10px] uppercase font-semibold">Usuario Activo:</span>
+                        <div className="p-3 rounded-2xl bg-white/[0.02] border border-blue-900/40 text-xs space-y-1">
+                          <span className="text-blue-300/50 block text-[10px] uppercase font-semibold">Usuario Activo:</span>
                           <span className="font-semibold text-white truncate block">{pc.socioNombreActual}</span>
                           <div className="flex items-center gap-1 text-[11px] text-amber-400 pt-1">
                             <Clock size={12} />
@@ -676,19 +749,19 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
                     </div>
 
-                    <div className="pt-5 mt-4 border-t border-white/[0.06]">
+                    <div className="pt-5 mt-4 border-t border-blue-900/40">
                       {disponible ? (
                         <button
                           onClick={() => setModalReservarPC(pc)}
-                          className="w-full py-2.5 rounded-full bg-white hover:bg-teal-400 text-black font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2"
+                          className="w-full py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-md shadow-blue-950/40 flex items-center justify-center gap-2"
                         >
-                          <Zap size={14} className="fill-black stroke-black" />
+                          <Zap size={14} className="fill-white stroke-white" />
                           <span>Usar con mi Tarjeta</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => setModalLiberarPC(pc)}
-                          className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white font-semibold text-xs border border-white/[0.1] transition-all flex items-center justify-center gap-2"
+                          className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-rose-600/30 text-white font-semibold text-xs border border-rose-500/30 transition-all flex items-center justify-center gap-2"
                         >
                           <RotateCcw size={13} />
                           <span>Liberar Terminal</span>
@@ -713,21 +786,21 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             {alumnoIdentificado ? (
               <div className="space-y-6">
                 
-                {/* Perfil del Alumno Apple Style */}
-                <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-4">
+                {/* Perfil del Alumno */}
+                <div className="p-6 rounded-3xl bg-[#0B1528]/70 border border-blue-900/40 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-blue-950/50">
                       {alumnoIdentificado.nombre.charAt(0)}
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-white">{alumnoIdentificado.nombre}</h3>
-                      <p className="text-xs text-white/50">{alumnoIdentificado.gradoGrupo} · Matrícula: {alumnoIdentificado.matricula}</p>
+                      <p className="text-xs text-blue-200/60">{alumnoIdentificado.gradoGrupo} · Matrícula: {alumnoIdentificado.matricula}</p>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setAlumnoIdentificado(null)}
-                    className="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium text-white/70 hover:text-white transition-all"
+                    className="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium text-blue-200/70 hover:text-white transition-all"
                   >
                     Cambiar
                   </button>
@@ -735,27 +808,27 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
                 {/* Libros en poder del alumno */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-white/50 px-1">Tus Libros Prestados</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-blue-300/50 px-1">Tus Libros Prestados</h4>
 
                   {librosDelAlumno.length === 0 ? (
-                    <div className="p-8 rounded-3xl bg-white/[0.02] border border-dashed border-white/[0.08] text-center text-white/40 text-xs">
+                    <div className="p-8 rounded-3xl bg-[#0B1528]/40 border border-dashed border-blue-900/40 text-center text-blue-300/40 text-xs">
                       🎉 ¡Todo al día! No tienes ningún libro pendiente por devolver.
                     </div>
                   ) : (
                     librosDelAlumno.map(p => (
                       <div
                         key={p.id}
-                        className="p-5 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+                        className="p-5 rounded-3xl bg-[#0B1528]/70 border border-blue-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
                       >
                         <div>
-                          <span className="text-[10px] font-mono text-white/30">{p.codigoPrestamo}</span>
+                          <span className="text-[10px] font-mono text-blue-300/40">{p.codigoPrestamo}</span>
                           <h5 className="text-base font-bold text-white">{p.libroTitulo}</h5>
-                          <p className="text-xs text-white/50">Entrega límite: <strong className="text-teal-300 font-medium">{p.fechaDevolucionEsperada}</strong></p>
+                          <p className="text-xs text-blue-200/60">Entrega límite: <strong className="text-amber-400 font-medium">{p.fechaDevolucionEsperada}</strong></p>
                         </div>
 
                         <button
                           onClick={() => handleDevolverLibroDirecto(p.id)}
-                          className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                          className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-950/40 transition-all flex items-center gap-1.5"
                         >
                           <RotateCcw size={14} />
                           <span>Devolver este Libro</span>
@@ -767,18 +840,18 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
 
               </div>
             ) : (
-              /* Tarjeta de bienvenida tipo Apple Wallet */
-              <div className="p-12 rounded-[36px] bg-gradient-to-b from-white/[0.05] to-white/[0.01] border border-white/[0.1] text-center space-y-6 shadow-2xl">
+              /* Tarjeta de bienvenida tipo Wallet */
+              <div className="p-12 rounded-[36px] bg-gradient-to-b from-[#0B1528] to-[#070E1B] border border-blue-900/40 text-center space-y-6 shadow-2xl">
                 <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-teal-500/10 animate-ping opacity-40" />
-                  <div className="w-16 h-16 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-teal-400 shadow-xl">
+                  <div className="absolute inset-0 rounded-full bg-blue-500/10 animate-ping opacity-40" />
+                  <div className="w-16 h-16 rounded-2xl bg-blue-950/60 border border-blue-800/40 flex items-center justify-center text-blue-300 shadow-xl">
                     <CreditCard size={28} className="stroke-[2.2]" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5 max-w-sm mx-auto">
                   <h3 className="text-xl font-bold text-white">Consulta tus Préstamos</h3>
-                  <p className="text-xs text-white/50 leading-relaxed">
+                  <p className="text-xs text-blue-200/60 leading-relaxed">
                     Pasa tu tarjeta escolar por el lector en cualquier momento para ver los libros que tienes en casa y su fecha de entrega.
                   </p>
                 </div>
@@ -793,7 +866,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                         }
                       }}
                       defaultValue=""
-                      className="px-4 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-white/70 text-xs font-medium cursor-pointer"
+                      className="px-4 py-2 rounded-full bg-[#060D1A] hover:bg-[#0E1C38] border border-blue-900/50 text-blue-200/80 text-xs font-medium cursor-pointer"
                     >
                       <option value="" disabled>O probar con alumno de demostración...</option>
                       {socios.map(s => (
@@ -810,35 +883,198 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
           </div>
         )}
 
+        {/* ------------------------------------------------------------- */}
+        {/* PESTAÑA D: BIBLIOTECARIO VIRTUAL INTELIGENTE */}
+        {/* ------------------------------------------------------------- */}
+        {pestana === 'ia' && (
+          <div className="max-w-4xl mx-auto space-y-5 animate-in fade-in duration-200">
+            
+            {/* Banner Superior Estilo Biblioteca Escolar */}
+            <div className="rounded-3xl p-6 bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 border border-blue-800/40 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-600/30 border border-blue-400/40 text-blue-300 flex items-center justify-center shrink-0 shadow-lg shadow-blue-950/50">
+                  <Bot size={28} className="stroke-[2.2]" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[10px] font-bold text-blue-200 mb-1">
+                    <Sparkles size={12} className="text-blue-300" />
+                    <span>Inteligencia Artificial para Alumnos & Docentes</span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">Bibliotecario Virtual Inteligente</h3>
+                  <p className="text-xs text-blue-200/80 mt-0.5">
+                    Orientación sobre libros de texto SEP, proyectos de aula NEM y recomendaciones de lectura.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sugerencias Rápidas para el Alumno */}
+            <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar text-xs">
+              <span className="text-[11px] font-bold text-blue-300/50 whitespace-nowrap flex items-center gap-1">
+                <Sparkles size={12} className="text-blue-400" />
+                Preguntas Rápidas:
+              </span>
+              {sugerenciasKiosco.map((sug, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleEnviarChatIA(sug)}
+                  disabled={cargandoChatIA}
+                  className="px-3.5 py-1.5 rounded-full bg-[#0B1528]/80 hover:bg-blue-900/40 border border-blue-900/50 hover:border-blue-500/40 text-blue-200 text-xs font-medium whitespace-nowrap transition-all shadow-xs disabled:opacity-50"
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
+
+            {/* Ventana de Conversación */}
+            <div className="bg-[#0B1528]/80 rounded-[32px] border border-blue-900/40 shadow-2xl p-5 sm:p-7 flex flex-col h-[540px] backdrop-blur-xl">
+              
+              {/* Mensajes */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scroll-smooth">
+                {mensajesChatIA.map((m) => {
+                  const esUsuario = m.remitente === 'usuario';
+
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex gap-3 ${esUsuario ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!esUsuario && (
+                        <div className="w-8 h-8 rounded-xl bg-blue-600/30 text-blue-300 border border-blue-500/30 flex items-center justify-center shrink-0 mt-1">
+                          <Bot size={16} />
+                        </div>
+                      )}
+
+                      <div className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed space-y-3 ${
+                        esUsuario
+                          ? 'bg-blue-600 text-white rounded-tr-xs shadow-md shadow-blue-900/30'
+                          : 'bg-[#0E1C38] border border-blue-800/40 text-slate-100 rounded-tl-xs shadow-sm'
+                      }`}>
+                        <div className="whitespace-pre-line font-medium">{m.contenido}</div>
+
+                        {/* Libros recomendados interactivos */}
+                        {m.librosSugeridos && m.librosSugeridos.length > 0 && (
+                          <div className="pt-2 border-t border-blue-700/30 space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 block">
+                              Libros Disponibles Recomendados:
+                            </span>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {m.librosSugeridos.map(libro => (
+                                <div
+                                  key={libro.id}
+                                  className="p-3 rounded-xl bg-black/40 border border-blue-500/20 hover:border-blue-400/50 transition-all flex flex-col justify-between gap-2"
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/50 truncate max-w-[120px]">
+                                        {libro.categoria}
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-emerald-400">
+                                        {libro.ejemplaresDisponibles} disp.
+                                      </span>
+                                    </div>
+                                    <h5 className="font-bold text-white text-xs mt-1.5 line-clamp-1">{libro.titulo}</h5>
+                                    <p className="text-[11px] text-blue-200/60 line-clamp-1">{libro.autor}</p>
+                                  </div>
+
+                                  <button
+                                    onClick={() => setModalPrestarLibro(libro)}
+                                    className="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-blue-950/40"
+                                  >
+                                    <Zap size={12} />
+                                    <span>Pedir con mi Tarjeta</span>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <span className="text-[9px] opacity-40 block text-right">
+                          {m.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {cargandoChatIA && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600/30 text-blue-300 border border-blue-500/30 flex items-center justify-center shrink-0">
+                      <Bot size={16} />
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-[#0E1C38] border border-blue-800/40 text-blue-200 text-xs flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin text-blue-400" />
+                      <span>El Bibliotecario Virtual está buscando en el catálogo...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Formulario de Envío */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleEnviarChatIA(inputChatIA);
+                }}
+                className="mt-4 pt-4 border-t border-blue-900/40 flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={inputChatIA}
+                  onChange={(e) => setInputChatIA(e.target.value)}
+                  placeholder="Pregúntale al bibliotecario (ej. '¿Qué libro me sirve para química en 3º?')..."
+                  className="flex-1 px-4 py-3 rounded-2xl bg-[#060D1A] border border-blue-900/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-xs text-white placeholder:text-blue-300/30 outline-none transition-all"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!inputChatIA.trim() || cargandoChatIA}
+                  className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-blue-950/40"
+                >
+                  <Send size={14} />
+                  <span className="hidden sm:inline">Preguntar</span>
+                </button>
+              </form>
+
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* ------------------------------------------------------------- */}
-      {/* MODAL APPLE PAY STYLE: CONFIRMACIÓN CON TARJETA DE LIBRO */}
+      {/* MODAL: CONFIRMACIÓN CON TARJETA DE LIBRO */}
       {/* ------------------------------------------------------------- */}
       {modalPrestarLibro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#0B1528] border border-blue-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
             
             <button
-              onClick={() => setModalPrestarLibro(null)}
-              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
+              onClick={() => {
+                setModalPrestarLibro(null);
+                setModalScanInput('');
+              }}
+              className="absolute right-5 top-5 text-blue-300/40 hover:text-white p-1 rounded-full transition-colors"
             >
               <X size={18} />
             </button>
 
-            {/* Animación Onda Apple Pay */}
+            {/* Animación Onda de Escaneo NFC */}
             <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-teal-500/20 animate-ping opacity-40" />
-              <div className="absolute inset-1.5 rounded-full bg-teal-500/20 animate-pulse" />
-              <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-slate-950 shadow-xl shadow-teal-500/30">
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-40" />
+              <div className="absolute inset-1.5 rounded-full bg-blue-500/20 animate-pulse" />
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
                 <ScanLine size={24} className="stroke-[2.5]" />
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Préstamo por 7 Días</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Préstamo por 7 Días</span>
               <h3 className="text-lg font-bold text-white">{modalPrestarLibro.titulo}</h3>
-              <p className="text-xs text-white/50">{modalPrestarLibro.autor}</p>
+              <p className="text-xs text-blue-200/60">{modalPrestarLibro.autor}</p>
             </div>
 
             {/* Input con autoFocus para capturar el lector USB al 100% */}
@@ -858,7 +1094,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       setModalScanInput('');
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.12] focus:border-teal-400 focus:bg-white/[0.08] text-center font-mono text-xs text-teal-300 placeholder:text-white/30 outline-none shadow-inner"
+                  className="w-full px-4 py-3 rounded-2xl bg-[#060D1A] border border-blue-800/50 focus:border-blue-400 focus:bg-[#071328] text-center font-mono text-xs text-blue-300 placeholder:text-blue-300/30 outline-none shadow-inner"
                 />
               </div>
 
@@ -887,7 +1123,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       type="button"
                       disabled={!socioParaVincularId}
                       onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
-                      className="px-4 py-2 rounded-xl bg-white hover:bg-teal-400 disabled:opacity-40 text-black font-bold text-xs transition-all whitespace-nowrap"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs transition-all whitespace-nowrap"
                     >
                       Vincular y Prestar
                     </button>
@@ -904,7 +1140,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-1.5 rounded-full bg-white/[0.04] text-white/40 hover:text-white text-[11px] font-medium border border-white/[0.06] cursor-pointer"
+                    className="px-3 py-1.5 rounded-full bg-[#060D1A] text-blue-300/60 hover:text-white text-[11px] font-medium border border-blue-900/40 cursor-pointer"
                   >
                     <option value="" disabled>O probar con tarjeta de demostración...</option>
                     {socios.map(s => (
@@ -918,7 +1154,10 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             </div>
 
             <button
-              onClick={() => setModalPrestarLibro(null)}
+              onClick={() => {
+                setModalPrestarLibro(null);
+                setModalScanInput('');
+              }}
               className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white/70 hover:text-white transition-colors"
             >
               Cancelar
@@ -932,23 +1171,31 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
       {/* MODAL RESERVAR COMPUTADORA */}
       {/* ------------------------------------------------------------- */}
       {modalReservarPC && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#0B1528] border border-blue-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
             
             <button
-              onClick={() => setModalReservarPC(null)}
-              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
+              onClick={() => {
+                setModalReservarPC(null);
+                setModalScanInput('');
+              }}
+              className="absolute right-5 top-5 text-blue-300/40 hover:text-white p-1 rounded-full transition-colors"
             >
               <X size={18} />
             </button>
 
-            <div className="w-16 h-16 rounded-2xl bg-teal-500/10 text-teal-400 border border-teal-500/20 flex items-center justify-center mx-auto">
-              <Laptop size={28} />
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-40" />
+              <div className="absolute inset-1.5 rounded-full bg-blue-500/20 animate-pulse" />
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
+                <Laptop size={26} />
+              </div>
             </div>
 
             <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Asignación de Estación</span>
               <h3 className="text-lg font-bold text-white">Reservar {modalReservarPC.nombre}</h3>
-              <p className="text-xs text-white/50">Sesión de 60 minutos · {modalReservarPC.modelo}</p>
+              <p className="text-xs text-blue-200/60">Sesión de 60 minutos · {modalReservarPC.modelo}</p>
             </div>
 
             <div className="space-y-3 pt-2">
@@ -966,7 +1213,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                     setModalScanInput('');
                   }
                 }}
-                className="w-full px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.12] focus:border-teal-400 text-center font-mono text-xs text-teal-300 placeholder:text-white/30 outline-none"
+                className="w-full px-4 py-3 rounded-2xl bg-[#060D1A] border border-blue-800/50 focus:border-blue-400 focus:bg-[#071328] text-center font-mono text-xs text-blue-300 placeholder:text-blue-300/30 outline-none"
               />
 
               {chipNoRegistrado && (
@@ -986,7 +1233,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                     type="button"
                     disabled={!socioParaVincularId}
                     onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
-                    className="w-full py-2 rounded-xl bg-white text-black font-bold text-xs"
+                    className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
                   >
                     Vincular y Usar Terminal
                   </button>
@@ -1002,7 +1249,7 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
                       }
                     }}
                     defaultValue=""
-                    className="px-3 py-1.5 rounded-full bg-white/[0.04] text-white/40 hover:text-white text-[11px] font-medium border border-white/[0.06] cursor-pointer"
+                    className="px-3 py-1.5 rounded-full bg-[#060D1A] text-blue-300/60 hover:text-white text-[11px] font-medium border border-blue-900/40 cursor-pointer"
                   >
                     <option value="" disabled>O probar con tarjeta de demostración...</option>
                     {socios.map(s => (
@@ -1016,7 +1263,10 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
             </div>
 
             <button
-              onClick={() => setModalReservarPC(null)}
+              onClick={() => {
+                setModalReservarPC(null);
+                setModalScanInput('');
+              }}
               className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white/70 hover:text-white transition-colors"
             >
               Cancelar
@@ -1027,40 +1277,144 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* MODAL LIBERAR COMPUTADORA */}
+      {/* MODAL LIBERAR COMPUTADORA CON CONFIRMACIÓN DE CHIP */}
       {/* ------------------------------------------------------------- */}
       {modalLiberarPC && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-white/[0.12] rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#0B1528] border border-blue-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl relative text-center space-y-6">
             
             <button
-              onClick={() => setModalLiberarPC(null)}
-              className="absolute right-5 top-5 text-white/40 hover:text-white p-1 rounded-full transition-colors"
+              onClick={() => {
+                setModalLiberarPC(null);
+                setModalScanInput('');
+              }}
+              className="absolute right-5 top-5 text-blue-300/40 hover:text-white p-1 rounded-full transition-colors"
             >
               <X size={18} />
             </button>
 
-            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto">
-              <RotateCcw size={28} />
+            {/* Animación Onda de Escaneo NFC */}
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-40" />
+              <div className="absolute inset-1.5 rounded-full bg-blue-500/20 animate-pulse" />
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
+                <ScanLine size={24} className="stroke-[2.5]" />
+              </div>
             </div>
 
             <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Devolución de Terminal</span>
               <h3 className="text-lg font-bold text-white">Liberar {modalLiberarPC.nombre}</h3>
-              <p className="text-xs text-white/50">Actualmente en uso por {modalLiberarPC.socioNombreActual || 'Alumno'}</p>
+              <p className="text-xs text-blue-200/60">
+                {modalLiberarPC.socioNombreActual 
+                  ? `Asignada a: ${modalLiberarPC.socioNombreActual}`
+                  : 'Terminal en sesión activa'}
+              </p>
+              <p className="text-[11px] text-blue-300/70 pt-1">
+                Acerca la tarjeta escolar NFC/RFID del alumno para confirmar la entrega.
+              </p>
             </div>
 
-            <div className="pt-2">
+            {/* Input con autoFocus para capturar el lector USB al 100% */}
+            <div className="space-y-3 pt-1">
+              <div className="relative">
+                <input
+                  ref={modalInputRef}
+                  type="text"
+                  autoFocus
+                  placeholder="Acerca tu tarjeta escolar..."
+                  value={modalScanInput}
+                  onChange={(e) => setModalScanInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && modalScanInput.trim().length >= 3) {
+                      e.preventDefault();
+                      procesarChip(modalScanInput.trim());
+                      setModalScanInput('');
+                    }
+                  }}
+                  className="w-full px-4 py-3 rounded-2xl bg-[#060D1A] border border-blue-800/50 focus:border-blue-400 focus:bg-[#071328] text-center font-mono text-xs text-blue-300 placeholder:text-blue-300/30 outline-none shadow-inner"
+                />
+              </div>
+
+              {/* Si el chip no estaba vinculado */}
+              {chipNoRegistrado && (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left space-y-2.5 animate-in zoom-in-95">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                    <AlertCircle size={15} />
+                    <span>Tarjeta Detectada (UID: {chipNoRegistrado})</span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 leading-tight">
+                    Selecciona el alumno para confirmar la liberación:
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <select
+                      value={socioParaVincularId}
+                      onChange={(e) => setSocioParaVincularId(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/20 text-white text-xs font-medium outline-none"
+                    >
+                      <option value="">Selecciona al alumno...</option>
+                      {socios.map(s => (
+                        <option key={s.id} value={s.id}>{s.nombre} ({s.gradoGrupo})</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!socioParaVincularId}
+                      onClick={() => handleVincularChipYContinuar(chipNoRegistrado, socioParaVincularId)}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs transition-all whitespace-nowrap"
+                    >
+                      Confirmar y Liberar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Selector de prueba con tarjeta de demostración */}
+              {socios.length > 0 && (
+                <div className="pt-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        procesarChip(e.target.value);
+                      }
+                    }}
+                    defaultValue=""
+                    className="px-3 py-1.5 rounded-full bg-[#060D1A] text-blue-300/60 hover:text-white text-[11px] font-medium border border-blue-900/40 cursor-pointer"
+                  >
+                    <option value="" disabled>O pasar tarjeta de demostración...</option>
+                    {socios.map(s => (
+                      <option key={s.id} value={s.nfcUid || s.matricula}>
+                        {s.nombre} ({s.gradoGrupo})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex flex-col gap-2">
               <button
                 onClick={() => {
                   const updated = storageService.liberarComputadora(modalLiberarPC.id, activeEscuelaId);
                   setComputadoras(updated);
                   reproducirSonido('devolver');
-                  mostrarToast('¡Estación liberada con éxito!', 'exito');
+                  mostrarToast(`¡${modalLiberarPC.nombre} liberada manualmente por el docente/bibliotecario!`, 'exito');
                   setModalLiberarPC(null);
+                  setModalScanInput('');
                 }}
-                className="w-full py-3 rounded-full bg-white hover:bg-rose-400 text-black font-bold text-xs shadow-md transition-all"
+                className="text-[11px] text-blue-300/40 hover:text-rose-400 transition-colors"
               >
-                Confirmar Liberación de Terminal
+                Liberación manual sin chip (Docente / Bibliotecario)
+              </button>
+
+              <button
+                onClick={() => {
+                  setModalLiberarPC(null);
+                  setModalScanInput('');
+                }}
+                className="w-full py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white/70 hover:text-white transition-colors"
+              >
+                Cancelar
               </button>
             </div>
 
@@ -1072,28 +1426,28 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
       {/* MODAL ÉXITO DE PRÉSTAMO */}
       {/* ------------------------------------------------------------- */}
       {prestamoExitosoInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-emerald-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl text-center space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="bg-[#0B1528] border border-blue-500/30 rounded-[36px] p-8 max-w-md w-full shadow-2xl text-center space-y-5">
             
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+            <div className="w-16 h-16 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center mx-auto border border-blue-500/30">
               <CheckCircle2 size={36} />
             </div>
 
             <div className="space-y-1">
               <h3 className="text-xl font-bold text-white">¡Préstamo Confirmado!</h3>
-              <p className="text-xs text-white/60 leading-relaxed">
-                El libro <strong className="text-teal-300">"{prestamoExitosoInfo.libro}"</strong> ha sido prestado con éxito a <strong className="text-white">{prestamoExitosoInfo.alumno}</strong>.
+              <p className="text-xs text-blue-200/70 leading-relaxed">
+                El libro <strong className="text-blue-300">"{prestamoExitosoInfo.libro}"</strong> ha sido prestado con éxito a <strong className="text-white">{prestamoExitosoInfo.alumno}</strong>.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs space-y-1">
-              <span className="text-white/40 block text-[10px] uppercase font-semibold">Fecha límite de devolución:</span>
+            <div className="p-4 rounded-2xl bg-[#060D1A] border border-blue-900/50 text-xs space-y-1">
+              <span className="text-blue-300/50 block text-[10px] uppercase font-semibold">Fecha límite de devolución:</span>
               <span className="text-base font-bold text-emerald-400 font-mono">{prestamoExitosoInfo.fechaDev}</span>
             </div>
 
             <button
               onClick={() => setPrestamoExitosoInfo(null)}
-              className="w-full py-3 rounded-full bg-white hover:bg-emerald-400 text-black font-bold text-xs shadow-lg transition-all"
+              className="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-950/40 transition-all"
             >
               Listo
             </button>
@@ -1102,9 +1456,9 @@ export const KioscoStandaloneApp: React.FC<KioscoStandaloneAppProps> = ({
         </div>
       )}
 
-      {/* Footer minimalista Apple */}
-      <footer className="py-4 border-t border-white/[0.06] text-center text-[11px] text-white/30 font-medium">
-        Biblioteca Cloud · Kiosco Escolar Automatizado
+      {/* Footer estilo Biblioteca Escolar */}
+      <footer className="py-4 border-t border-blue-900/30 text-center text-[11px] text-blue-300/40 font-medium">
+        Biblioteca Escolar · Kiosco de Autoservicio Automatizado
       </footer>
 
     </div>

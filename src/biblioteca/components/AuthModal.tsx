@@ -142,12 +142,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Encabezado */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center mx-auto mb-3 shadow-xs">
             <School size={24} />
           </div>
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">Acceso a Biblioteca Cloud SaaS</h2>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Acceso a Biblioteca Escolar</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Plataforma unificada con el ecosistema de <strong className="text-teal-700">asistencia.iaparamaestros.org</strong>
+            Plataforma unificada con el ecosistema de <strong className="text-blue-900">asistencia.iaparamaestros.org</strong>
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={() => { setTab('login'); setErrorMsg(null); }}
             className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-              tab === 'login' ? 'bg-white text-teal-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              tab === 'login' ? 'bg-white text-blue-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <LogIn size={14} />
@@ -230,7 +230,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-2 mt-2"
+              className="w-full py-3 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-bold rounded-xl shadow-md shadow-blue-900/20 transition-all flex items-center justify-center gap-2 mt-2"
             >
               {cargando ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
               <span>{cargando ? 'Validando con Servidor...' : 'Entrar a mi Biblioteca Escolar'}</span>

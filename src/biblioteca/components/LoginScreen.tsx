@@ -131,22 +131,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <div className="h-6 w-px bg-slate-200" />
 
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 via-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-                <Cloud size={18} className="stroke-[2.5]" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-950 via-blue-900 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-blue-950/20">
+                <BookOpen size={18} className="stroke-[2.2]" />
               </div>
               <div>
                 <span className="text-base font-black tracking-tight text-slate-900 leading-none">
-                  Biblioteca<span className="text-teal-600">Cloud</span>
-                </span>
-                <span className="ml-1.5 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
-                  SaaS Escolar
+                  Biblioteca <span className="text-blue-800">Escolar</span>
                 </span>
               </div>
             </div>
           </div>
 
           <div className="text-xs text-slate-500 font-medium hidden sm:block">
-            Ecosistema integrado con <strong className="text-slate-800">asistencia.iaparamaestros.org</strong>
+            Ecosistema integrado con <strong className="text-blue-900">asistencia.iaparamaestros.org</strong>
           </div>
         </div>
       </header>
@@ -171,7 +168,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <button
               onClick={() => { setTab('login'); setErrorMsg(null); }}
               className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                tab === 'login' ? 'bg-white text-teal-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                tab === 'login' ? 'bg-white text-blue-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <LogIn size={14} />
@@ -181,7 +178,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <button
               onClick={() => { setTab('registro'); setErrorMsg(null); }}
               className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                tab === 'registro' ? 'bg-white text-teal-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                tab === 'registro' ? 'bg-white text-blue-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <UserPlus size={14} />
@@ -222,7 +219,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={loginIdentificador}
                     onChange={(e) => setLoginIdentificador(e.target.value)}
                     placeholder="ej. tu_usuario o correo@escuela.edu.mx"
-                    className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-xs font-medium"
+                    className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 text-xs font-medium"
                   />
                 </div>
               </div>
@@ -237,7 +234,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-xs font-mono"
+                    className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 text-xs font-mono"
                   />
                 </div>
               </div>
@@ -245,7 +242,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 type="submit"
                 disabled={cargando}
-                className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-md shadow-teal-600/25 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-md shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
               >
                 {cargando ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
                 <span>{cargando ? 'Validando con Servidor...' : 'Ingresar a mi Biblioteca'}</span>
@@ -389,7 +386,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
       {/* Footer Informativo */}
       <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-xs text-slate-400">
-        <p>Biblioteca Cloud · Ecosistema de Inteligencia Artificial para la Educación Mexicana</p>
+        <p>Biblioteca Escolar · Ecosistema de Inteligencia Artificial para la Educación Mexicana</p>
       </footer>
 
     </div>

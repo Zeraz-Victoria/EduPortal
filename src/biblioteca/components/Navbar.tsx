@@ -58,7 +58,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       badge: `${estadisticas.pcsDisponibles}/${estadisticas.totalPcs}` 
     },
     { id: 'socios', label: 'Lectores & Alumnos', icon: Users, badge: estadisticas.totalSocios },
-    { id: 'kiosco', label: 'Modo Kiosco', icon: Sparkles, highlight: true },
     { id: 'ia', label: 'Bibliotecario IA', icon: Bot, isSpecial: true },
     { id: 'reportes', label: 'Reportes & Datos', icon: BarChart3 }
   ];
@@ -73,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-black/[0.06] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] transition-all">
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-2xl border-b border-blue-950/[0.08] shadow-[0_2px_15px_-3px_rgba(15,23,42,0.05)] transition-all">
       {/* Barra Superior */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -93,16 +92,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="h-5 w-px bg-black/[0.08]" />
 
             <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onCambiarTab('catalogo')}>
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-teal-600 via-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-                <Cloud size={18} className="stroke-[2.5]" />
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-950 via-blue-900 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-blue-950/20">
+                <BookOpen size={18} className="stroke-[2.2]" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-base font-bold tracking-tight text-slate-900 leading-none">
-                    Biblioteca<span className="text-teal-600 font-semibold">Cloud</span>
-                  </span>
-                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/60">
-                    SaaS
+                    Biblioteca <span className="text-blue-800 font-semibold">Escolar</span>
                   </span>
                 </div>
                 <p className="text-[11px] font-medium text-slate-500 leading-none mt-1 truncate max-w-[180px] sm:max-w-xs">
@@ -116,16 +112,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2.5">
             
             {usuarioActivo ? (
-              <div className="flex items-center gap-2 bg-black/[0.03] border border-black/[0.05] p-1.5 pl-3 rounded-full text-xs">
+              <div className="flex items-center gap-2 bg-blue-950/[0.03] border border-blue-950/[0.08] p-1.5 pl-3 rounded-full text-xs">
                 <div className="hidden sm:block text-right">
                   <div className="flex items-center justify-end gap-1 font-bold text-slate-900 text-xs leading-tight">
-                    <UserCheck size={13} className="text-teal-600" />
+                    <UserCheck size={13} className="text-blue-800" />
                     <span>{usuarioActivo.nombreCompleto}</span>
                   </div>
                   <div className="text-[10px] text-slate-500 flex items-center justify-end gap-1">
                     <span className="capitalize">{usuarioActivo.rol}</span>
                     <span>·</span>
-                    <span className="font-semibold text-teal-700 truncate max-w-[130px]">
+                    <span className="font-semibold text-blue-800 truncate max-w-[130px]">
                       {usuarioActivo.nombreEscuela}
                     </span>
                   </div>
@@ -153,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onAbrirAuth}
-                className="inline-flex items-center gap-1.5 bg-black hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 bg-blue-950 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm transition-all"
               >
                 <LogIn size={13} />
                 <span>Ingresar</span>
@@ -162,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => window.open('#/biblioteca/kiosco', '_blank')}
-              className="inline-flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm shadow-teal-600/25 transition-all"
+              className="inline-flex items-center gap-1.5 bg-blue-800 hover:bg-blue-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm shadow-blue-900/20 transition-all"
               title="Abrir Kiosco de Autoservicio en ventana independiente para alumnos"
             >
               <Sparkles size={13} />
@@ -192,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'text-slate-600 hover:text-black hover:bg-black/[0.04]')
                 }`}
               >
-                <Icon size={14} className={esTabSuperAdmin ? (esActiva ? 'text-slate-950' : 'text-amber-400') : (esActiva ? 'text-teal-400' : 'text-slate-400')} />
+                <Icon size={14} className={esTabSuperAdmin ? (esActiva ? 'text-slate-950' : 'text-amber-400') : (esActiva ? 'text-blue-400' : 'text-slate-400')} />
                 <span>{tab.label}</span>
 
                 {tab.alertBadge && (

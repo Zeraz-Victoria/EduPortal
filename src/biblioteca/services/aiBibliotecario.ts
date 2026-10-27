@@ -52,7 +52,7 @@ export const consultarBibliotecarioIA = async (
       ).join('\n');
 
       const prompt = `
-Eres el "Bibliotecario Virtual Inteligente de Biblioteca Cloud", un asistente pedagógico experto en la Nueva Escuela Mexicana (NEM), planes de estudio de secundaria, literatura y fomento a la lectura.
+Eres el "Bibliotecario Virtual Inteligente de la Biblioteca Escolar", un asistente pedagógico experto en la Nueva Escuela Mexicana (NEM), planes de estudio de secundaria, literatura y fomento a la lectura.
 
 Tu misión es responder amablemente a la siguiente consulta del docente o alumno:
 "${consulta}"
@@ -68,12 +68,16 @@ INSTRUCCIONES:
 5. Mantén la respuesta concisa (máximo 3 párrafos claros con viñetas).
 `;
 
-      const modelos = ['gemini-flash-latest', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite'];
+      const modelos = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
       for (const modelo of modelos) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
@@ -82,6 +86,7 @@ INSTRUCCIONES:
               }
             })
           });
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const data = await response.json();

@@ -131,16 +131,6 @@ export const SociosView: React.FC<SociosViewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Barra de Lectura de Chip NFC / RFID */}
-      <ChipScannerBar
-        escuelaId={escuelaId}
-        onSocioIdentificado={(s) => {
-          setBusqueda(s.nombre);
-          abrirEditarSocio(s);
-        }}
-        sociosDisponibles={socios}
-      />
-
       {mensajeSync && (
         <div className="p-3 bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 size={16} className="text-teal-600 shrink-0" />

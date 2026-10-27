@@ -63,13 +63,6 @@ export const ComputadorasView: React.FC<ComputadorasViewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Barra de Lectura de Chip NFC / RFID */}
-      <ChipScannerBar
-        escuelaId={escuelaId}
-        onSocioIdentificado={(s) => setSocioChipModal(s)}
-        sociosDisponibles={socios}
-      />
-
       {/* Banner Superior & Métricas */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-6 shadow-sm border border-slate-700/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>

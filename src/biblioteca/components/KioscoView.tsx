@@ -97,13 +97,6 @@ export const KioscoView: React.FC<KioscoViewProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* Barra de Lectura Automática de Chip NFC / RFID */}
-      <ChipScannerBar
-        escuelaId={escuelaId}
-        onSocioIdentificado={handleSocioIdentificadoConChip}
-        sociosDisponibles={socios}
-      />
-      
       {/* Encabezado Kiosco con botón de salida */}
       <div className="bg-gradient-to-r from-teal-700 via-emerald-700 to-teal-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

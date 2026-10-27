@@ -59,7 +59,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({
           alert('¡Respaldo importado correctamente!');
           onRecargarTodo();
         } else {
-          alert('Error al leer el archivo de respaldo. Asegúrate de que sea un JSON válido de Biblioteca Cloud.');
+          alert('Error al leer el archivo de respaldo. Asegúrate de que sea un JSON válido de Biblioteca Escolar.');
         }
       }
     };

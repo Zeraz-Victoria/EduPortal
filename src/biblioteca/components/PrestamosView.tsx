@@ -137,13 +137,6 @@ export const PrestamosView: React.FC<PrestamosViewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Barra de Lectura de Chip NFC / RFID */}
-      <ChipScannerBar
-        escuelaId={escuelaId}
-        onSocioIdentificado={(s) => setSocioChipModal(s)}
-        sociosDisponibles={socios}
-      />
-
       {/* Tarjetas de Métricas Rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
