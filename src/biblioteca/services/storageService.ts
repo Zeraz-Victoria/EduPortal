@@ -1,20 +1,159 @@
-import { Libro, Socio, Prestamo, Computadora, EstadisticasBiblioteca } from '../types';
+import { Libro, Socio, Prestamo, Computadora, EstadisticasBiblioteca, EscuelaSaaS, PlanSaaS, EstadoEscuelaSaaS } from '../types';
 import { LIBROS_INICIALES, SOCIOS_INICIALES, PRESTAMOS_INICIALES, COMPUTADORAS_INICIALES } from '../constants';
 
-const STORAGE_KEYS = {
-  LIBROS: 'eduportal_biblioteca_libros_v1',
-  SOCIOS: 'eduportal_biblioteca_socios_v1',
-  PRESTAMOS: 'eduportal_biblioteca_prestamos_v1',
-  PCS: 'eduportal_biblioteca_pcs_v1'
-};
+const ESCUELAS_STORAGE_KEY = 'eduportal_saas_escuelas_v1';
+const ESCUELAS_CREDS_KEY = 'eduportal_saas_escuelas_creds_v1';
+
+// Escuelas iniciales del ecosistema
+const ESCUELAS_DEMO: EscuelaSaaS[] = [
+  {
+    id: 'esc-101',
+    nombre: 'Escuela Telesecundaria "Cuauhtémoc"',
+    claveCct: '30ETV0145X',
+    director: 'Prof. Carlos Mendoza Estrada',
+    email: 'carlos.mendoza@escuela.edu.mx',
+    telefono: '228-814-5500',
+    plan: 'pro',
+    estado: 'activa',
+    fechaRegistro: '2024-01-15',
+    fechaVencimiento: '2027-01-15',
+    totalLibros: 12,
+    totalPrestamos: 4,
+    totalSocios: 5
+  },
+  {
+    id: 'esc-102',
+    nombre: 'Secundaria Técnica Industrial No. 19',
+    claveCct: '30DST0019Z',
+    director: 'Mtra. Laura Patricia Méndez Rivas',
+    email: 'laura.mendez@escuela.edu.mx',
+    telefono: '228-814-5501',
+    plan: 'institucional',
+    estado: 'activa',
+    fechaRegistro: '2024-02-10',
+    fechaVencimiento: '2027-02-10',
+    totalLibros: 15,
+    totalPrestamos: 2,
+    totalSocios: 8
+  },
+  {
+    id: 'esc-103',
+    nombre: 'Escuela Secundaria General "Benito Juárez"',
+    claveCct: '30DES0052K',
+    director: 'Prof. Roberto Gómez Bolaños',
+    email: 'direccion@benitojuarez.edu.mx',
+    telefono: '228-812-9900',
+    plan: 'prueba',
+    estado: 'prueba',
+    fechaRegistro: '2024-09-01',
+    fechaVencimiento: '2024-10-01',
+    totalLibros: 10,
+    totalPrestamos: 1,
+    totalSocios: 3
+  }
+];
 
 export const storageService = {
-  // === LIBROS ===
-  getLibros: (): Libro[] => {
+  // === GESTIÓN DE ESCUELAS / TENANTS (SAAS) ===
+  getEscuelas: (): EscuelaSaaS[] => {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.LIBROS);
+      const data = localStorage.getItem(ESCUELAS_STORAGE_KEY);
       if (!data) {
-        localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(LIBROS_INICIALES));
+        localStorage.setItem(ESCUELAS_STORAGE_KEY, JSON.stringify(ESCUELAS_DEMO));
+        return ESCUELAS_DEMO;
+      }
+      return JSON.parse(data);
+    } catch (e) {
+      console.error('Error al leer escuelas SaaS', e);
+      return ESCUELAS_DEMO;
+    }
+  },
+
+  asegurarEscuela: (escuela: EscuelaSaaS): EscuelaSaaS[] => {
+    const escuelas = storageService.getEscuelas();
+    const index = escuelas.findIndex(e => e.id === escuela.id);
+    let updated: EscuelaSaaS[];
+    if (index >= 0) {
+      updated = [...escuelas];
+      updated[index] = { ...updated[index], ...escuela };
+    } else {
+      updated = [escuela, ...escuelas];
+    }
+    localStorage.setItem(ESCUELAS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  registrarNuevaEscuela: (escuela: EscuelaSaaS, passwordPlano: string): EscuelaSaaS[] => {
+    const escuelas = storageService.asegurarEscuela(escuela);
+
+    // Guardar credenciales para fallback offline
+    try {
+      const credsData = localStorage.getItem(ESCUELAS_CREDS_KEY);
+      const creds = credsData ? JSON.parse(credsData) : {};
+      creds[escuela.email.toLowerCase()] = {
+        password: passwordPlano,
+        escuelaId: escuela.id
+      };
+      localStorage.setItem(ESCUELAS_CREDS_KEY, JSON.stringify(creds));
+    } catch (e) {}
+
+    // Inicializar acervo para la nueva escuela con el catálogo NEM
+    storageService.getLibros(escuela.id);
+    storageService.getSocios(escuela.id);
+    storageService.getComputadoras(escuela.id);
+
+    return escuelas;
+  },
+
+  buscarEscuelaPorCredencial: (identificador: string, passwordPlano: string): EscuelaSaaS | null => {
+    try {
+      const credsData = localStorage.getItem(ESCUELAS_CREDS_KEY);
+      if (!credsData) return null;
+      const creds = JSON.parse(credsData);
+      const entry = creds[identificador.toLowerCase()];
+      if (entry && entry.password === passwordPlano) {
+        const escuelas = storageService.getEscuelas();
+        return escuelas.find(e => e.id === entry.escuelaId) || null;
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  actualizarPlanEscuela: (escuelaId: string, plan: PlanSaaS): EscuelaSaaS[] => {
+    const escuelas = storageService.getEscuelas();
+    const updated = escuelas.map(e => e.id === escuelaId ? { ...e, plan } : e);
+    localStorage.setItem(ESCUELAS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  cambiarEstadoEscuela: (escuelaId: string, estado: EstadoEscuelaSaaS): EscuelaSaaS[] => {
+    const escuelas = storageService.getEscuelas();
+    const updated = escuelas.map(e => e.id === escuelaId ? { ...e, estado } : e);
+    localStorage.setItem(ESCUELAS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  eliminarEscuela: (escuelaId: string): EscuelaSaaS[] => {
+    const escuelas = storageService.getEscuelas();
+    const updated = escuelas.filter(e => e.id !== escuelaId);
+    localStorage.setItem(ESCUELAS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  // === MULTI-TENANT HELPERS (AISLAMIENTO DE DATOS POR ESCUELA) ===
+  getTenantKey: (base: string, escuelaId: string = 'default') => {
+    const cleanId = (escuelaId || 'default').replace(/[^a-zA-Z0-9_-]/g, '');
+    return `eduportal_saas_${cleanId}_${base}`;
+  },
+
+  // === LIBROS (AISLADO POR ESCUELA) ===
+  getLibros: (escuelaId: string = 'esc-101'): Libro[] => {
+    try {
+      const key = storageService.getTenantKey('libros', escuelaId);
+      const data = localStorage.getItem(key);
+      if (!data) {
+        // Inicializar cada nueva escuela con el catálogo de libros oficiales SEP / NEM
+        localStorage.setItem(key, JSON.stringify(LIBROS_INICIALES));
         return LIBROS_INICIALES;
       }
       return JSON.parse(data);
@@ -24,8 +163,8 @@ export const storageService = {
     }
   },
 
-  saveLibro: (libro: Libro): Libro[] => {
-    const libros = storageService.getLibros();
+  saveLibro: (libro: Libro, escuelaId: string = 'esc-101'): Libro[] => {
+    const libros = storageService.getLibros(escuelaId);
     const index = libros.findIndex(l => l.id === libro.id);
     let updated: Libro[];
     if (index >= 0) {
@@ -34,23 +173,26 @@ export const storageService = {
     } else {
       updated = [libro, ...libros];
     }
-    localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(updated));
+    const key = storageService.getTenantKey('libros', escuelaId);
+    localStorage.setItem(key, JSON.stringify(updated));
     return updated;
   },
 
-  deleteLibro: (id: string): Libro[] => {
-    const libros = storageService.getLibros();
+  deleteLibro: (id: string, escuelaId: string = 'esc-101'): Libro[] => {
+    const libros = storageService.getLibros(escuelaId);
     const updated = libros.filter(l => l.id !== id);
-    localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(updated));
+    const key = storageService.getTenantKey('libros', escuelaId);
+    localStorage.setItem(key, JSON.stringify(updated));
     return updated;
   },
 
-  // === SOCIOS ===
-  getSocios: (): Socio[] => {
+  // === SOCIOS (AISLADO POR ESCUELA) ===
+  getSocios: (escuelaId: string = 'esc-101'): Socio[] => {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SOCIOS);
+      const key = storageService.getTenantKey('socios', escuelaId);
+      const data = localStorage.getItem(key);
       if (!data) {
-        localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(SOCIOS_INICIALES));
+        localStorage.setItem(key, JSON.stringify(SOCIOS_INICIALES));
         return SOCIOS_INICIALES;
       }
       return JSON.parse(data);
@@ -60,8 +202,8 @@ export const storageService = {
     }
   },
 
-  saveSocio: (socio: Socio): Socio[] => {
-    const socios = storageService.getSocios();
+  saveSocio: (socio: Socio, escuelaId: string = 'esc-101'): Socio[] => {
+    const socios = storageService.getSocios(escuelaId);
     const index = socios.findIndex(s => s.id === socio.id);
     let updated: Socio[];
     if (index >= 0) {
@@ -70,27 +212,29 @@ export const storageService = {
     } else {
       updated = [socio, ...socios];
     }
-    localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(updated));
+    const key = storageService.getTenantKey('socios', escuelaId);
+    localStorage.setItem(key, JSON.stringify(updated));
     return updated;
   },
 
-  deleteSocio: (id: string): Socio[] => {
-    const socios = storageService.getSocios();
+  deleteSocio: (id: string, escuelaId: string = 'esc-101'): Socio[] => {
+    const socios = storageService.getSocios(escuelaId);
     const updated = socios.filter(s => s.id !== id);
-    localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(updated));
+    const key = storageService.getTenantKey('socios', escuelaId);
+    localStorage.setItem(key, JSON.stringify(updated));
     return updated;
   },
 
-  // === PRÉSTAMOS ===
-  getPrestamos: (): Prestamo[] => {
+  // === PRÉSTAMOS (AISLADO POR ESCUELA) ===
+  getPrestamos: (escuelaId: string = 'esc-101'): Prestamo[] => {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.PRESTAMOS);
+      const key = storageService.getTenantKey('prestamos', escuelaId);
+      const data = localStorage.getItem(key);
       let prestamos: Prestamo[] = data ? JSON.parse(data) : PRESTAMOS_INICIALES;
       if (!data) {
-        localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(PRESTAMOS_INICIALES));
+        localStorage.setItem(key, JSON.stringify(PRESTAMOS_INICIALES));
       }
 
-      // Actualizar automáticamente estados vencidos
       const hoy = new Date().toISOString().split('T')[0];
       let huboCambios = false;
 
@@ -109,7 +253,7 @@ export const storageService = {
       });
 
       if (huboCambios) {
-        localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(prestamos));
+        localStorage.setItem(key, JSON.stringify(prestamos));
       }
 
       return prestamos;
@@ -119,10 +263,13 @@ export const storageService = {
     }
   },
 
-  createPrestamo: (nuevo: Omit<Prestamo, 'id' | 'codigoPrestamo'>): { prestamo: Prestamo; prestamos: Prestamo[]; libros: Libro[]; socios: Socio[] } => {
-    const prestamos = storageService.getPrestamos();
-    const libros = storageService.getLibros();
-    const socios = storageService.getSocios();
+  createPrestamo: (
+    nuevo: Omit<Prestamo, 'id' | 'codigoPrestamo'>, 
+    escuelaId: string = 'esc-101'
+  ): { prestamo: Prestamo; prestamos: Prestamo[]; libros: Libro[]; socios: Socio[] } => {
+    const prestamos = storageService.getPrestamos(escuelaId);
+    const libros = storageService.getLibros(escuelaId);
+    const socios = storageService.getSocios(escuelaId);
 
     const id = `prest-${Date.now()}`;
     const codigoPrestamo = `PREST-${new Date().getFullYear()}-${String(prestamos.length + 1).padStart(3, '0')}`;
@@ -133,9 +280,8 @@ export const storageService = {
     };
 
     const prestamosActualizados = [prestamoCompleto, ...prestamos];
-    localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(prestamosActualizados));
+    localStorage.setItem(storageService.getTenantKey('prestamos', escuelaId), JSON.stringify(prestamosActualizados));
 
-    // Decrementar ejemplares disponibles del libro
     const librosActualizados = libros.map(l => {
       if (l.id === nuevo.libroId) {
         return {
@@ -145,9 +291,8 @@ export const storageService = {
       }
       return l;
     });
-    localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(librosActualizados));
+    localStorage.setItem(storageService.getTenantKey('libros', escuelaId), JSON.stringify(librosActualizados));
 
-    // Incrementar prestamosActivos del socio
     const sociosActualizados = socios.map(s => {
       if (s.id === nuevo.socioId) {
         return {
@@ -157,7 +302,7 @@ export const storageService = {
       }
       return s;
     });
-    localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(sociosActualizados));
+    localStorage.setItem(storageService.getTenantKey('socios', escuelaId), JSON.stringify(sociosActualizados));
 
     return {
       prestamo: prestamoCompleto,
@@ -167,10 +312,13 @@ export const storageService = {
     };
   },
 
-  devolverPrestamo: (prestamoId: string): { prestamos: Prestamo[]; libros: Libro[]; socios: Socio[] } => {
-    const prestamos = storageService.getPrestamos();
-    const libros = storageService.getLibros();
-    const socios = storageService.getSocios();
+  devolverPrestamo: (
+    prestamoId: string, 
+    escuelaId: string = 'esc-101'
+  ): { prestamos: Prestamo[]; libros: Libro[]; socios: Socio[] } => {
+    const prestamos = storageService.getPrestamos(escuelaId);
+    const libros = storageService.getLibros(escuelaId);
+    const socios = storageService.getSocios(escuelaId);
 
     const target = prestamos.find(p => p.id === prestamoId);
     if (!target) return { prestamos, libros, socios };
@@ -187,9 +335,8 @@ export const storageService = {
       }
       return p;
     });
-    localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(prestamosActualizados));
+    localStorage.setItem(storageService.getTenantKey('prestamos', escuelaId), JSON.stringify(prestamosActualizados));
 
-    // Reintegrar ejemplar disponible
     const librosActualizados = libros.map(l => {
       if (l.id === target.libroId) {
         return {
@@ -199,9 +346,8 @@ export const storageService = {
       }
       return l;
     });
-    localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(librosActualizados));
+    localStorage.setItem(storageService.getTenantKey('libros', escuelaId), JSON.stringify(librosActualizados));
 
-    // Reducir prestamosActivos del socio
     const sociosActualizados = socios.map(s => {
       if (s.id === target.socioId) {
         return {
@@ -211,7 +357,7 @@ export const storageService = {
       }
       return s;
     });
-    localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(sociosActualizados));
+    localStorage.setItem(storageService.getTenantKey('socios', escuelaId), JSON.stringify(sociosActualizados));
 
     return {
       prestamos: prestamosActualizados,
@@ -220,12 +366,13 @@ export const storageService = {
     };
   },
 
-  // === COMPUTADORAS ===
-  getComputadoras: (): Computadora[] => {
+  // === COMPUTADORAS (AISLADO POR ESCUELA) ===
+  getComputadoras: (escuelaId: string = 'esc-101'): Computadora[] => {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.PCS);
+      const key = storageService.getTenantKey('pcs', escuelaId);
+      const data = localStorage.getItem(key);
       if (!data) {
-        localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(COMPUTADORAS_INICIALES));
+        localStorage.setItem(key, JSON.stringify(COMPUTADORAS_INICIALES));
         return COMPUTADORAS_INICIALES;
       }
       return JSON.parse(data);
@@ -235,8 +382,8 @@ export const storageService = {
     }
   },
 
-  asignarComputadora: (pcId: string, socioId: string, socioNombre: string, minutos: number = 60): Computadora[] => {
-    const pcs = storageService.getComputadoras();
+  asignarComputadora: (pcId: string, socioId: string, socioNombre: string, minutos: number = 60, escuelaId: string = 'esc-101'): Computadora[] => {
+    const pcs = storageService.getComputadoras(escuelaId);
     const ahora = new Date();
     const hora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
@@ -253,12 +400,12 @@ export const storageService = {
       }
       return pc;
     });
-    localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(updated));
+    localStorage.setItem(storageService.getTenantKey('pcs', escuelaId), JSON.stringify(updated));
     return updated;
   },
 
-  liberarComputadora: (pcId: string): Computadora[] => {
-    const pcs = storageService.getComputadoras();
+  liberarComputadora: (pcId: string, escuelaId: string = 'esc-101'): Computadora[] => {
+    const pcs = storageService.getComputadoras(escuelaId);
     const updated = pcs.map(pc => {
       if (pc.id === pcId) {
         return {
@@ -272,12 +419,12 @@ export const storageService = {
       }
       return pc;
     });
-    localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(updated));
+    localStorage.setItem(storageService.getTenantKey('pcs', escuelaId), JSON.stringify(updated));
     return updated;
   },
 
-  cambiarEstadoPC: (pcId: string, estado: 'disponible' | 'en_uso' | 'mantenimiento'): Computadora[] => {
-    const pcs = storageService.getComputadoras();
+  cambiarEstadoPC: (pcId: string, estado: 'disponible' | 'en_uso' | 'mantenimiento', escuelaId: string = 'esc-101'): Computadora[] => {
+    const pcs = storageService.getComputadoras(escuelaId);
     const updated = pcs.map(pc => {
       if (pc.id === pcId) {
         return {
@@ -292,16 +439,16 @@ export const storageService = {
       }
       return pc;
     });
-    localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(updated));
+    localStorage.setItem(storageService.getTenantKey('pcs', escuelaId), JSON.stringify(updated));
     return updated;
   },
 
-  // === ESTADÍSTICAS ===
-  getEstadisticas: (): EstadisticasBiblioteca => {
-    const libros = storageService.getLibros();
-    const prestamos = storageService.getPrestamos();
-    const socios = storageService.getSocios();
-    const pcs = storageService.getComputadoras();
+  // === ESTADÍSTICAS POR ESCUELA ===
+  getEstadisticas: (escuelaId: string = 'esc-101'): EstadisticasBiblioteca => {
+    const libros = storageService.getLibros(escuelaId);
+    const prestamos = storageService.getPrestamos(escuelaId);
+    const socios = storageService.getSocios(escuelaId);
+    const pcs = storageService.getComputadoras(escuelaId);
 
     const totalTitulos = libros.length;
     const totalEjemplares = libros.reduce((acc, l) => acc + l.ejemplaresTotales, 0);
@@ -324,32 +471,66 @@ export const storageService = {
     };
   },
 
+  // === MÉTRICAS GLOBALES DEL SAAS PARA EL SUPERADMIN ===
+  getMetricasGlobalesSaaS: () => {
+    const escuelas = storageService.getEscuelas();
+    let totalLibrosGlobal = 0;
+    let totalPrestamosGlobal = 0;
+    let totalSociosGlobal = 0;
+
+    escuelas.forEach(e => {
+      const libros = storageService.getLibros(e.id);
+      const prestamos = storageService.getPrestamos(e.id);
+      const socios = storageService.getSocios(e.id);
+
+      totalLibrosGlobal += libros.length;
+      totalPrestamosGlobal += prestamos.length;
+      totalSociosGlobal += socios.length;
+    });
+
+    const escuelasActivas = escuelas.filter(e => e.estado === 'activa').length;
+    const escuelasPrueba = escuelas.filter(e => e.estado === 'prueba').length;
+    const escuelasSuspendidas = escuelas.filter(e => e.estado === 'suspendida').length;
+
+    return {
+      totalEscuelas: escuelas.length,
+      escuelasActivas,
+      escuelasPrueba,
+      escuelasSuspendidas,
+      totalLibrosGlobal,
+      totalPrestamosGlobal,
+      totalSociosGlobal,
+      escuelas
+    };
+  },
+
   // === EXPORTAR / IMPORTAR / RESTABLECER ===
-  exportarJSON: () => {
+  exportarJSON: (escuelaId: string = 'esc-101') => {
     const backup = {
-      version: '1.0',
+      version: '2.0-saas',
+      escuelaId,
       fechaExportacion: new Date().toISOString(),
-      libros: storageService.getLibros(),
-      socios: storageService.getSocios(),
-      prestamos: storageService.getPrestamos(),
-      computadoras: storageService.getComputadoras()
+      libros: storageService.getLibros(escuelaId),
+      socios: storageService.getSocios(escuelaId),
+      prestamos: storageService.getPrestamos(escuelaId),
+      computadoras: storageService.getComputadoras(escuelaId)
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `respaldo_biblioteca_cloud_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `respaldo_biblioteca_${escuelaId}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   },
 
-  importarJSON: (jsonData: string): boolean => {
+  importarJSON: (jsonData: string, escuelaId: string = 'esc-101'): boolean => {
     try {
       const parsed = JSON.parse(jsonData);
-      if (parsed.libros) localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(parsed.libros));
-      if (parsed.socios) localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(parsed.socios));
-      if (parsed.prestamos) localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(parsed.prestamos));
-      if (parsed.computadoras) localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(parsed.computadoras));
+      if (parsed.libros) localStorage.setItem(storageService.getTenantKey('libros', escuelaId), JSON.stringify(parsed.libros));
+      if (parsed.socios) localStorage.setItem(storageService.getTenantKey('socios', escuelaId), JSON.stringify(parsed.socios));
+      if (parsed.prestamos) localStorage.setItem(storageService.getTenantKey('prestamos', escuelaId), JSON.stringify(parsed.prestamos));
+      if (parsed.computadoras) localStorage.setItem(storageService.getTenantKey('pcs', escuelaId), JSON.stringify(parsed.computadoras));
       return true;
     } catch (e) {
       console.error('Error al importar JSON', e);
@@ -357,15 +538,15 @@ export const storageService = {
     }
   },
 
-  restablecerDatos: () => {
-    localStorage.setItem(STORAGE_KEYS.LIBROS, JSON.stringify(LIBROS_INICIALES));
-    localStorage.setItem(STORAGE_KEYS.SOCIOS, JSON.stringify(SOCIOS_INICIALES));
-    localStorage.setItem(STORAGE_KEYS.PRESTAMOS, JSON.stringify(PRESTAMOS_INICIALES));
-    localStorage.setItem(STORAGE_KEYS.PCS, JSON.stringify(COMPUTADORAS_INICIALES));
+  restablecerDatos: (escuelaId: string = 'esc-101') => {
+    localStorage.setItem(storageService.getTenantKey('libros', escuelaId), JSON.stringify(LIBROS_INICIALES));
+    localStorage.setItem(storageService.getTenantKey('socios', escuelaId), JSON.stringify(SOCIOS_INICIALES));
+    localStorage.setItem(storageService.getTenantKey('prestamos', escuelaId), JSON.stringify(PRESTAMOS_INICIALES));
+    localStorage.setItem(storageService.getTenantKey('pcs', escuelaId), JSON.stringify(COMPUTADORAS_INICIALES));
   },
 
-  exportarCSVLibros: () => {
-    const libros = storageService.getLibros();
+  exportarCSVLibros: (escuelaId: string = 'esc-101') => {
+    const libros = storageService.getLibros(escuelaId);
     const headers = ['Código', 'Título', 'Autor', 'Categoría', 'Nivel', 'Año', 'Formato', 'Total Ejemplares', 'Disponibles', 'Ubicación'];
     const rows = libros.map(l => [
       `"${l.codigo}"`,
@@ -385,7 +566,7 @@ export const storageService = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `inventario_libros_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `inventario_libros_${escuelaId}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

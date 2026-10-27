@@ -94,6 +94,37 @@ export interface EstadisticasBiblioteca {
   totalPcs: number;
 }
 
+export type PlanSaaS = 'prueba' | 'basico' | 'pro' | 'institucional';
+export type EstadoEscuelaSaaS = 'activa' | 'prueba' | 'suspendida';
+
+export interface EscuelaSaaS {
+  id: string; // institucion_id
+  nombre: string;
+  claveCct?: string;
+  director: string;
+  email: string;
+  telefono?: string;
+  plan: PlanSaaS;
+  estado: EstadoEscuelaSaaS;
+  fechaRegistro: string;
+  fechaVencimiento?: string;
+  totalLibros?: number;
+  totalPrestamos?: number;
+  totalSocios?: number;
+}
+
+export interface UsuarioSaaS {
+  id: string | number;
+  usuario: string;
+  email: string;
+  nombreCompleto: string;
+  rol: 'superadmin' | 'director' | 'docente' | 'bibliotecario';
+  institucionId: string;
+  nombreEscuela: string;
+  token?: string;
+  esSuperAdmin?: boolean;
+}
+
 export interface MensajeChat {
   id: string;
   remitente: 'usuario' | 'ia';

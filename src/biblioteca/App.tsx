@@ -7,9 +7,12 @@ import { SociosView } from './components/SociosView';
 import { KioscoView } from './components/KioscoView';
 import { AsistenteIAView } from './components/AsistenteIAView';
 import { ReportesView } from './components/ReportesView';
+import { SuperAdminView } from './components/SuperAdminView';
+import { AuthModal } from './components/AuthModal';
 import { storageService } from './services/storageService';
-import { Libro, Prestamo, Socio, Computadora, EstadisticasBiblioteca } from './types';
-import { CheckCircle, AlertCircle, X } from 'lucide-react';
+import { authService } from './services/authService';
+import { Libro, Prestamo, Socio, Computadora, EstadisticasBiblioteca, UsuarioSaaS, EscuelaSaaS } from './types';
+import { CheckCircle, AlertCircle, X, ShieldAlert } from 'lucide-react';
 
 interface BibliotecaAppProps {
   onBack: () => void;
@@ -17,6 +20,14 @@ interface BibliotecaAppProps {
 
 export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
   const [tabActiva, setTabActiva] = useState<TabId>('catalogo');
+  
+  // Estado SaaS / Autenticación
+  const [usuarioActivo, setUsuarioActivo] = useState<UsuarioSaaS | null>(null);
+  const [escuelaActiva, setEscuelaActiva] = useState<EscuelaSaaS | null>(null);
+  const [escuelas, setEscuelas] = useState<EscuelaSaaS[]>([]);
+  const [modalAuthAbierto, setModalAuthAbierto] = useState(false);
+
+  // Datos aislados por escuela
   const [libros, setLibros] = useState<Libro[]>([]);
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [socios, setSocios] = useState<Socio[]>([]);
@@ -42,36 +53,102 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
     }, 3500);
   };
 
-  const cargarDatos = useCallback(() => {
-    const l = storageService.getLibros();
-    const p = storageService.getPrestamos();
-    const s = storageService.getSocios();
-    const c = storageService.getComputadoras();
-    const e = storageService.getEstadisticas();
+  // 1. Inicializar sesión o cargar escuela por defecto
+  useEffect(() => {
+    const sesion = authService.getSesion();
+    const todasEscuelas = storageService.getEscuelas();
+    setEscuelas(todasEscuelas);
+
+    if (sesion) {
+      setUsuarioActivo(sesion);
+      const esc = todasEscuelas.find(e => e.id === sesion.institucionId) || todasEscuelas[0];
+      setEscuelaActiva(esc);
+    } else {
+      // Cargar primera escuela como espacio predeterminado
+      const esc = todasEscuelas[0] || null;
+      setEscuelaActiva(esc);
+      const defaultUser: UsuarioSaaS = {
+        id: 'usr-demo-01',
+        usuario: 'carlos.mendoza@escuela.edu.mx',
+        email: 'carlos.mendoza@escuela.edu.mx',
+        nombreCompleto: 'Prof. Carlos Mendoza',
+        rol: 'director',
+        institucionId: esc ? esc.id : 'esc-101',
+        nombreEscuela: esc ? esc.nombre : 'Escuela Telesecundaria Cuauhtémoc',
+        esSuperAdmin: false
+      };
+      setUsuarioActivo(defaultUser);
+      authService.setSesion(defaultUser);
+    }
+  }, []);
+
+  // 2. Cargar datos específicos del tenant activo
+  const cargarDatosTenant = useCallback(() => {
+    const escuelaId = escuelaActiva ? escuelaActiva.id : 'esc-101';
+    const l = storageService.getLibros(escuelaId);
+    const p = storageService.getPrestamos(escuelaId);
+    const s = storageService.getSocios(escuelaId);
+    const c = storageService.getComputadoras(escuelaId);
+    const e = storageService.getEstadisticas(escuelaId);
+    const todasEsc = storageService.getEscuelas();
 
     setLibros(l);
     setPrestamos(p);
     setSocios(s);
     setComputadoras(c);
     setEstadisticas(e);
-  }, []);
+    setEscuelas(todasEsc);
+  }, [escuelaActiva]);
 
   useEffect(() => {
-    cargarDatos();
-  }, [cargarDatos]);
+    cargarDatosTenant();
+  }, [cargarDatosTenant]);
 
-  // Handlers
+  const activeEscuelaId = escuelaActiva ? escuelaActiva.id : 'esc-101';
+
+  // Manejadores de autenticación
+  const handleLoginExitoso = (usuario: UsuarioSaaS) => {
+    setUsuarioActivo(usuario);
+    const todasEsc = storageService.getEscuelas();
+    setEscuelas(todasEsc);
+
+    if (usuario.esSuperAdmin || usuario.rol === 'superadmin') {
+      setTabActiva('superadmin');
+      mostrarToast(`Bienvenido al Portal SuperAdmin, ${usuario.nombreCompleto}`);
+    } else {
+      const esc = todasEsc.find(e => e.id === usuario.institucionId) || todasEsc[0];
+      setEscuelaActiva(esc);
+      setTabActiva('catalogo');
+      mostrarToast(`Sesión iniciada con éxito en ${usuario.nombreEscuela}`);
+    }
+  };
+
+  const handleCerrarSesion = () => {
+    authService.cerrarSesion();
+    setUsuarioActivo(null);
+    mostrarToast('Has cerrado sesión correctamente.');
+    setModalAuthAbierto(true);
+  };
+
+  // SuperAdmin: Switch Tenant (Administrar como escuela específica)
+  const handleSeleccionarEscuelaDesdeSuperAdmin = (escuela: EscuelaSaaS) => {
+    setEscuelaActiva(escuela);
+    setTabActiva('catalogo');
+    mostrarToast(`Espacio de trabajo cambiado a: ${escuela.nombre}`);
+  };
+
+  // Handlers CRUD aislados por escuela
   const handleGuardarLibro = (libro: Libro) => {
-    const updated = storageService.saveLibro(libro);
+    const updated = storageService.saveLibro(libro, activeEscuelaId);
     setLibros(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast(`Libro "${libro.titulo}" guardado en el catálogo.`);
   };
 
   const handleEliminarLibro = (id: string) => {
-    const updated = storageService.deleteLibro(id);
+    const updated = storageService.deleteLibro(id, activeEscuelaId);
     setLibros(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast('Libro retirado del catálogo.');
   };
 
@@ -81,55 +158,55 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
   };
 
   const handleCrearPrestamo = (nuevo: Omit<Prestamo, 'id' | 'codigoPrestamo'>) => {
-    const res = storageService.createPrestamo(nuevo);
+    const res = storageService.createPrestamo(nuevo, activeEscuelaId);
     setPrestamos(res.prestamos);
     setLibros(res.libros);
     setSocios(res.socios);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     setLibroPrestarSel(null);
     mostrarToast(`¡Préstamo de "${nuevo.libroTitulo}" registrado con éxito!`);
   };
 
   const handleDevolverPrestamo = (prestamoId: string) => {
-    const res = storageService.devolverPrestamo(prestamoId);
+    const res = storageService.devolverPrestamo(prestamoId, activeEscuelaId);
     setPrestamos(res.prestamos);
     setLibros(res.libros);
     setSocios(res.socios);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast('Devolución registrada correctamente. Ejemplar reincorporado al estante.');
   };
 
   const handleAsignarPC = (pcId: string, socioId: string, socioNombre: string, minutos: number = 60) => {
-    const updated = storageService.asignarComputadora(pcId, socioId, socioNombre, minutos);
+    const updated = storageService.asignarComputadora(pcId, socioId, socioNombre, minutos, activeEscuelaId);
     setComputadoras(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast(`Estación asignada a ${socioNombre}.`);
   };
 
   const handleLiberarPC = (pcId: string) => {
-    const updated = storageService.liberarComputadora(pcId);
+    const updated = storageService.liberarComputadora(pcId, activeEscuelaId);
     setComputadoras(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast('Estación de cómputo liberada.');
   };
 
   const handleCambiarEstadoPC = (pcId: string, estado: 'disponible' | 'en_uso' | 'mantenimiento') => {
-    const updated = storageService.cambiarEstadoPC(pcId, estado);
+    const updated = storageService.cambiarEstadoPC(pcId, estado, activeEscuelaId);
     setComputadoras(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
   };
 
   const handleGuardarSocio = (socio: Socio) => {
-    const updated = storageService.saveSocio(socio);
+    const updated = storageService.saveSocio(socio, activeEscuelaId);
     setSocios(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast(`Lector "${socio.nombre}" guardado.`);
   };
 
   const handleEliminarSocio = (id: string) => {
-    const updated = storageService.deleteSocio(id);
+    const updated = storageService.deleteSocio(id, activeEscuelaId);
     setSocios(updated);
-    setEstadisticas(storageService.getEstadisticas());
+    setEstadisticas(storageService.getEstadisticas(activeEscuelaId));
     mostrarToast('Socio eliminado.');
   };
 
@@ -142,6 +219,10 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
         onCambiarTab={setTabActiva}
         estadisticas={estadisticas}
         onVolverPortal={onBack}
+        usuarioActivo={usuarioActivo}
+        escuelaActiva={escuelaActiva}
+        onAbrirAuth={() => setModalAuthAbierto(true)}
+        onCerrarSesion={handleCerrarSesion}
       />
 
       {/* Contenedor Principal de Vistas */}
@@ -209,11 +290,26 @@ export const BibliotecaApp: React.FC<BibliotecaAppProps> = ({ onBack }) => {
             estadisticas={estadisticas}
             libros={libros}
             prestamos={prestamos}
-            onRecargarTodo={cargarDatos}
+            onRecargarTodo={cargarDatosTenant}
+          />
+        )}
+
+        {tabActiva === 'superadmin' && (
+          <SuperAdminView
+            escuelas={escuelas}
+            onActualizarEscuelas={cargarDatosTenant}
+            onSeleccionarEscuela={handleSeleccionarEscuelaDesdeSuperAdmin}
           />
         )}
 
       </main>
+
+      {/* Modal de Autenticación / Registro / SuperAdmin */}
+      <AuthModal
+        abierto={modalAuthAbierto}
+        onCerrar={() => setModalAuthAbierto(false)}
+        onLoginExitoso={handleLoginExitoso}
+      />
 
       {/* Floating Toast Notification */}
       {toastMensaje && (

@@ -8,45 +8,69 @@ import {
   Sparkles, 
   Bot, 
   BarChart3, 
-  ArrowLeft 
+  ArrowLeft,
+  ShieldCheck,
+  School,
+  LogIn,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
-import { EstadisticasBiblioteca } from '../types';
+import { EstadisticasBiblioteca, UsuarioSaaS, EscuelaSaaS } from '../types';
 
-export type TabId = 'catalogo' | 'prestamos' | 'computadoras' | 'socios' | 'kiosco' | 'ia' | 'reportes';
+export type TabId = 'catalogo' | 'prestamos' | 'computadoras' | 'socios' | 'kiosco' | 'ia' | 'reportes' | 'superadmin';
 
 interface NavbarProps {
   tabActiva: TabId;
   onCambiarTab: (tab: TabId) => void;
   estadisticas: EstadisticasBiblioteca;
   onVolverPortal: () => void;
+  usuarioActivo: UsuarioSaaS | null;
+  escuelaActiva: EscuelaSaaS | null;
+  onAbrirAuth: () => void;
+  onCerrarSesion: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   tabActiva,
   onCambiarTab,
   estadisticas,
-  onVolverPortal
+  onVolverPortal,
+  usuarioActivo,
+  escuelaActiva,
+  onAbrirAuth,
+  onCerrarSesion
 }) => {
-  const tabs = [
-    { id: 'catalogo' as TabId, label: 'Catálogo & Libros', icon: BookOpen, badge: estadisticas.totalTitulos },
+  const esSuperAdmin = usuarioActivo?.esSuperAdmin || usuarioActivo?.rol === 'superadmin';
+
+  const tabs: { id: TabId; label: string; icon: any; badge?: any; alertBadge?: any; highlight?: boolean; isSpecial?: boolean }[] = [
+    { id: 'catalogo', label: 'Catálogo & Libros', icon: BookOpen, badge: estadisticas.totalTitulos },
     { 
-      id: 'prestamos' as TabId, 
+      id: 'prestamos', 
       label: 'Préstamos', 
       icon: BookmarkCheck, 
       badge: estadisticas.prestamosActivos,
       alertBadge: estadisticas.prestamosVencidos > 0 ? estadisticas.prestamosVencidos : undefined 
     },
     { 
-      id: 'computadoras' as TabId, 
+      id: 'computadoras', 
       label: 'Cómputo', 
       icon: Monitor, 
       badge: `${estadisticas.pcsDisponibles}/${estadisticas.totalPcs}` 
     },
-    { id: 'socios' as TabId, label: 'Lectores & Alumnos', icon: Users, badge: estadisticas.totalSocios },
-    { id: 'kiosco' as TabId, label: 'Modo Kiosco', icon: Sparkles, highlight: true },
-    { id: 'ia' as TabId, label: 'Bibliotecario IA', icon: Bot, isSpecial: true },
-    { id: 'reportes' as TabId, label: 'Reportes & Datos', icon: BarChart3 }
+    { id: 'socios', label: 'Lectores & Alumnos', icon: Users, badge: estadisticas.totalSocios },
+    { id: 'kiosco', label: 'Modo Kiosco', icon: Sparkles, highlight: true },
+    { id: 'ia', label: 'Bibliotecario IA', icon: Bot, isSpecial: true },
+    { id: 'reportes', label: 'Reportes & Datos', icon: BarChart3 }
   ];
+
+  if (esSuperAdmin) {
+    tabs.push({
+      id: 'superadmin',
+      label: 'Portal SuperAdmin',
+      icon: ShieldCheck,
+      badge: 'MATRIZ'
+    });
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all">
@@ -78,32 +102,70 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Biblioteca<span className="text-teal-600">Cloud</span>
                   </span>
                   <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
-                    SaaS Escolar
+                    SaaS
                   </span>
                 </div>
-                <p className="text-[11px] font-medium text-slate-500 leading-none mt-0.5">
-                  Gestión Bibliotecaria, Kiosco y Recursos NEM
+                <p className="text-[11px] font-medium text-slate-500 leading-none mt-0.5 truncate max-w-[200px] sm:max-w-xs">
+                  {escuelaActiva ? escuelaActiva.nombre : 'Gestión Bibliotecaria NEM'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Estado del sistema & Quick Info */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>Online · {estadisticas.ejemplaresDisponibles} ejemplares disponibles</span>
-            </div>
+          {/* Información de Sesión SaaS & Escuela Activa */}
+          <div className="flex items-center gap-3">
+            
+            {usuarioActivo ? (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 pl-3 rounded-xl text-xs font-medium">
+                <div className="hidden sm:block text-right">
+                  <div className="flex items-center justify-end gap-1 font-bold text-slate-900 text-xs">
+                    <UserCheck size={13} className="text-teal-600" />
+                    <span>{usuarioActivo.nombreCompleto}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-end gap-1">
+                    <span className="capitalize">{usuarioActivo.rol}</span>
+                    <span>·</span>
+                    <span className="font-bold text-teal-700 truncate max-w-[140px]">
+                      {usuarioActivo.nombreEscuela}
+                    </span>
+                  </div>
+                </div>
+
+                {esSuperAdmin && (
+                  <button
+                    onClick={() => onCambiarTab('superadmin')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-colors ${
+                      tabActiva === 'superadmin' ? 'bg-amber-400 text-slate-950' : 'bg-slate-900 text-white hover:bg-black'
+                    }`}
+                  >
+                    SuperAdmin
+                  </button>
+                )}
+
+                <button
+                  onClick={onCerrarSesion}
+                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                  title="Cerrar sesión"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onAbrirAuth}
+                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-all"
+              >
+                <LogIn size={14} />
+                <span>Iniciar Sesión / Registro SaaS</span>
+              </button>
+            )}
 
             <button
               onClick={() => onCambiarTab('kiosco')}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm shadow-teal-500/25 transition-all"
+              className="hidden lg:inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm shadow-teal-500/25 transition-all"
             >
               <Sparkles size={14} />
-              <span>Abrir Kiosco Alumnos</span>
+              <span>Kiosco Alumnos</span>
             </button>
           </div>
 
@@ -114,6 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const esActiva = tabActiva === tab.id;
+            const esTabSuperAdmin = tab.id === 'superadmin';
 
             return (
               <button
@@ -121,12 +184,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id={`tab-btn-${tab.id}`}
                 onClick={() => onCambiarTab(tab.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${
-                  esActiva
-                    ? 'bg-teal-50 text-teal-700 border border-teal-200 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent'
+                  esTabSuperAdmin
+                    ? (esActiva ? 'bg-amber-400 text-slate-950 shadow-xs' : 'bg-slate-900 text-amber-300 hover:bg-black')
+                    : (esActiva
+                        ? 'bg-teal-50 text-teal-700 border border-teal-200 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent')
                 }`}
               >
-                <Icon size={16} className={esActiva ? 'text-teal-600' : 'text-slate-400'} />
+                <Icon size={16} className={esTabSuperAdmin ? (esActiva ? 'text-slate-950' : 'text-amber-400') : (esActiva ? 'text-teal-600' : 'text-slate-400')} />
                 <span>{tab.label}</span>
 
                 {tab.alertBadge && (
@@ -137,7 +202,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {tab.badge !== undefined && !tab.alertBadge && (
                   <span className={`ml-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
-                    esActiva ? 'bg-teal-200/60 text-teal-800' : 'bg-slate-200/80 text-slate-700'
+                    esTabSuperAdmin
+                      ? (esActiva ? 'bg-slate-950 text-amber-400' : 'bg-amber-400 text-slate-950')
+                      : (esActiva ? 'bg-teal-200/60 text-teal-800' : 'bg-slate-200/80 text-slate-700')
                   }`}>
                     {tab.badge}
                   </span>
